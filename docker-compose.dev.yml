@@ -1,0 +1,18 @@
+services:
+
+  smartcast-backend:
+    build:
+      context: ./backend
+    container_name: smartcast-backend-dev
+
+    ports:
+      - "8080:8080"
+
+    volumes:
+      - ./backend:/app
+      - ~/.m2:/root/.m2
+
+    command: sh -c "./mvnw install -DskipTests && ./mvnw spring-boot:run -pl app"
+
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
