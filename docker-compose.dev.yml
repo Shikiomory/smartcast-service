@@ -16,3 +16,15 @@ services:
 
     environment:
       - SPRING_PROFILES_ACTIVE=dev
+
+  smartcast-frontend:
+    build:
+      context: ./frontend
+    container_name: smartcast-frontend-dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/frontend
+      - /frontend/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8080
