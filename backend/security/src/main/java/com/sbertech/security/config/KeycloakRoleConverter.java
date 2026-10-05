@@ -1,4 +1,4 @@
-package com.sbertech.app.config;
+package com.sbertech.security.config;
 
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.core.GrantedAuthority;
