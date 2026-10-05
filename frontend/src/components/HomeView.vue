@@ -35,7 +35,7 @@ const cards = ref<Card[]>([
 
   <main>
     <div class="content">
-      <div v-for="card in cards" :key="card.id" class="podcast-card">
+      <div v-for="card in cards" :key="card.id" class="card">
         <div class="card-cover">
 <!--          <img class="card-img" :src="card.image" />-->
           <h2>Обложка</h2>
@@ -51,5 +51,85 @@ const cards = ref<Card[]>([
 </template>
 
 <style scoped>
+/* заголовок */
+header {
+  display: flex; /* построение в ряд */
+  justify-content: space-between; /* место между объектами */
+  align-items: center; /* выравнивание по вертикали по центру */
+  padding: 16px 32px; /* внутренние отступы */
+  border-bottom: 1px solid #2E303AFF;
+}
+
+.search-container input {
+  padding: 8px 16px; /* внутренние отступы */
+  width: 300px; /* ширина */
+  border-radius: 20px; /* округление */
+  border: 1px solid gray; /* обводка */
+
+}
+
+.auth-container button {
+  margin-left: 8px;
+  padding: 8px 16px; /* внутренние отступы */
+  cursor: pointer; /* смена курсора при наведении */
+  border-radius: 20px; /* округление */
+  border: 1px solid gray; /* обводка */
+  font-weight: bold; /* жирный шрифт */
+}
+
+.auth-container button:hover {
+  background-color: gray; /* затемнение при наведении */
+}
+
+
+/* главный блок */
+main {
+  padding: 32px 32px; /* внутренние отступы */
+}
+
+.content {
+  display: grid; /* сетка */
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* автоматическое построение колонок по размеру */
+  gap: 24px; /* отступы между карточками */
+}
+
+
+
+/* карточки */
+.card {
+  background-color: #2E303A; /* цвет фона */
+  border-radius: 12px; /* округление */
+  padding: 16px; /* внутренние отступы */
+  cursor: pointer; /* смена курсора при наведении */
+  transition: background-color 0.3s ease; /* затемнение при наведении */
+}
+
+.card:hover {
+  background-color: #424453; /* затемнение при наведении */
+}
+
+.card-cover {
+
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-author {
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.card-duration {
+  font-size: 14px;
+  color: gray;
+}
 
 </style>
