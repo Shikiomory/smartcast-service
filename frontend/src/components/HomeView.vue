@@ -2,7 +2,9 @@
 
 import { ref } from "vue";
 import { audioService } from "../composables/audioService.ts";
-const {isPlaying, playAudio, pauseAudio} = audioService();
+const {isPlaying, duration, currentTime, playAudio, pauseAudio} = audioService();
+
+const soundFile = ref()
 
 interface Card {
   id: number
@@ -10,6 +12,7 @@ interface Card {
   author: string
   duration: string
 }
+
 
 const cards = ref<Card[]>([
   { id: 1, title: 'Инквизитор Эйзенхорн - лучший цикл книг по Вархаммер 40.000', author: 'Практическая светлая магия', duration: '11:35'},
@@ -31,6 +34,42 @@ function togglePlayState() {
   else {
     // playAudio("https://apostol-space.tech/uploads/404a8e76b218762e9efe38108f16e080_e2a7d1be93b1ad3a6c036e7f6597d6c6.mp3");
     playAudio("/ost.mp3")
+  }
+}
+
+function uploadFile(event: Event) {
+  const target = event.target as HTMLInputElement;
+
+  if (target.files && target.files[0]) {
+    soundFile.value = target.files[0]
+    console.log("Файл загружен с диска:" + soundFile.value.name)
+  }
+
+}
+
+async function uploadAudio() {
+  try {
+    if (!soundFile.value) {
+      alert("Файл не выбран")
+      return;
+    }
+
+    const formData = new FormData();
+
+    formData.append("file", soundFile.value);
+
+    const response = await fetch("/rest-api/author/new-material",
+        {
+          method: "POST",
+          body: formData
+        })
+
+    if (response.ok) {
+      soundFile.value = null;
+      alert("Файл загружен")
+    }
+  } catch (error) {
+    console.log("Ошибка при загрузке файла: " + error)
   }
 }
 
@@ -66,10 +105,16 @@ function togglePlayState() {
         </div>
       </div>
     </div>
+
+    <div class="uploader-container">
+      <input type="file" @change="uploadFile"/>
+      <button class="upload-button" @click="uploadAudio"> Загрузить </button>
+    </div>
   </main>
 
   <footer class="footer-player">
     <button class="play-pause-button" @click="togglePlayState"> {{isPlaying ? 'Пауза' : 'Продолжить'}}</button>
+    <span class="audio-duration"> {{ currentTime + '/' + duration }} </span>
   </footer>
 </template>
 
@@ -157,18 +202,40 @@ main {
 
 
 
+/* загрузка файлов */
+.uploader-container {
+  width: 100%;
+  padding: 32px;
+}
+
+
+/* плеер */
 .footer-player {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
+  bottom: 5%;
+  left: 18%;
+  width: 60%;
   height: 60px;
+  border-radius: 20px;
   background-color: gray;
+  display: flex;
+  padding: 16px 32px;
+  align-items: center; /* выравнивание по вертикали по центру */
+  gap: 24px;
 }
 
 .play-pause-button {
   cursor: pointer;
   font-weight: bold;
   border-radius: 20px;
+  padding: 8px 16px;
+}
+
+.play-pause-button:hover {
+  background-color: gray; /* затемнение при наведении */
+}
+
+.audio-duration {
+  color: white;
 }
 </style>
