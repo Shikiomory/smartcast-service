@@ -1,6 +1,8 @@
 <script setup lang="ts">
 
-import {ref} from "vue";
+import { ref } from "vue";
+import { audioService } from "../composables/audioService.ts";
+const {isPlaying, playAudio, pauseAudio} = audioService();
 
 interface Card {
   id: number
@@ -15,6 +17,23 @@ const cards = ref<Card[]>([
   { id: 3, title: 'Михаил Ершлов. Зачем пивовару нюхать скунса? [18+]', author: 'Два пива, пжлст!', duration: '1:09:40'},
   { id: 4, title: 'Как учат английский по методам спецслужб? Секретный выпуск из архивов!', author: 'Без языка', duration: '25:49'},
 ])
+
+function handleCardClick(card: Card) {
+  console.log(card);
+  // playAudio("https://apostol-space.tech/uploads/404a8e76b218762e9efe38108f16e080_e2a7d1be93b1ad3a6c036e7f6597d6c6.mp3")
+  playAudio("/ost.mp3")
+}
+
+function togglePlayState() {
+  if (isPlaying.value) {
+    pauseAudio();
+  }
+  else {
+    // playAudio("https://apostol-space.tech/uploads/404a8e76b218762e9efe38108f16e080_e2a7d1be93b1ad3a6c036e7f6597d6c6.mp3");
+    playAudio("/ost.mp3")
+  }
+}
+
 </script>
 
 <template>
@@ -35,7 +54,7 @@ const cards = ref<Card[]>([
 
   <main>
     <div class="content">
-      <div v-for="card in cards" :key="card.id" class="card">
+      <div v-for="card in cards" :key="card.id" class="card" @click="handleCardClick(card)">
         <div class="card-cover">
 <!--          <img class="card-img" :src="card.image" />-->
           <h2>Обложка</h2>
@@ -48,6 +67,10 @@ const cards = ref<Card[]>([
       </div>
     </div>
   </main>
+
+  <footer class="footer-player">
+    <button class="play-pause-button" @click="togglePlayState"> {{isPlaying ? 'Пауза' : 'Продолжить'}}</button>
+  </footer>
 </template>
 
 <style scoped>
@@ -132,4 +155,20 @@ main {
   color: gray;
 }
 
+
+
+.footer-player {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 60px;
+  background-color: gray;
+}
+
+.play-pause-button {
+  cursor: pointer;
+  font-weight: bold;
+  border-radius: 20px;
+}
 </style>
