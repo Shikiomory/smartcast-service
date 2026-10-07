@@ -1,0 +1,19 @@
+server:
+  port: 8080
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8180/realms/smartcast
+      client:
+        provider:
+          keycloak:
+            issuer-uri: http://localhost:8180/realms/smartcast
+        registration:
+          keycloak:
+            client-id: smartcast-client
+            client-secret: CHANGE_ME_SECRET
+            scope: openid, profile, email, roles
+            authorization-grant-type: authorization_code
