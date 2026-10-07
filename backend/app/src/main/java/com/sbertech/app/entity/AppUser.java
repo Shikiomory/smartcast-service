@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
+@Table(name = "app_user")
 @Getter
 @Setter
 public class AppUser {
@@ -13,15 +14,16 @@ public class AppUser {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "keycloak_id", nullable = false, unique = true, length = 255)
     private String keycloakId;
 
-    @Column(nullable = false, length = 100)
+    @Column(name = "display_name", nullable = false, length = 100)
     private String displayName;
 
-    @Column(length = 1000)
+    @Column(name = "bio", length = 1000)
     private String bio;
 
     @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "avatar_id", unique = true)
     private MediaAsset avatar;
 }
