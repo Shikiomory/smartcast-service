@@ -1,0 +1,25 @@
+server:
+  port: 8080
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://keycloak:8080/realms/smartcast/protocol/openid-connect/certs
+
+      client:
+        provider:
+          keycloak:
+            authorization-uri: http://localhost:8180/realms/smartcast/protocol/openid-connect/auth
+            token-uri: http://keycloak:8080/realms/smartcast/protocol/openid-connect/token
+            user-info-uri: http://keycloak:8080/realms/smartcast/protocol/openid-connect/userinfo
+            jwk-set-uri: http://keycloak:8080/realms/smartcast/protocol/openid-connect/certs
+            user-name-attribute: preferred_username
+        registration:
+          keycloak:
+            client-id: smartcast-client
+            client-secret: CHANGE_ME_SECRET
+            scope: openid, profile, email, roles
+            authorization-grant-type: authorization_code
+            redirect-uri: "http://localhost:8080/login/oauth2/code/keycloak"
