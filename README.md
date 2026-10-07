@@ -10,3 +10,10 @@
    ```bash
    docker-compose -f docker-compose.dev.yml up --build
    ```
+   Для запуска только одного модуля укажите его название, например:
+   ```bash
+   docker-compose -f docker-compose.dev.yml up -d keycloak
+   ```
+   Для работы с бэкендом через ide запустите сначала keycloak через докер
+
+   Для проверки работы бэкенда с фронтендом запустите frontend через докер
