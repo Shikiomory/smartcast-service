@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
+@Table(name = "media_asset")
 @Getter
 @Setter
 public class MediaAsset {
@@ -13,21 +14,22 @@ public class MediaAsset {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "bucket", nullable = false, length = 255)
     private String bucket;
 
-    @Column(nullable = false, length = 1024)
+    @Column(name = "object_key", nullable = false, length = 1024)
     private String objectKey;
 
+    @Column(name = "original_name", length = 255)
     private String originalName;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "type", nullable = false, length = 32)
     private MediaAssetType type;
 
-    @Column(nullable = false, length = 100)
+    @Column(name = "content_type", nullable = false, length = 100)
     private String contentType;
 
-    @Column(nullable = false)
+    @Column(name = "size_bytes", nullable = false)
     private Long sizeBytes;
 }
