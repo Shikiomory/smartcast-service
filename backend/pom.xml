@@ -20,6 +20,7 @@
         <module>app</module>
         <module>core</module>
         <module>security</module>
+        <module>db-storage</module>
     </modules>
 
     <properties>
