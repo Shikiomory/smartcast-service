@@ -7,6 +7,7 @@ COPY pom.xml .
 
 COPY core/pom.xml core/
 COPY app/pom.xml app/
+COPY security/pom.xml security/
 
 RUN ./mvnw dependency:go-offline -B
 

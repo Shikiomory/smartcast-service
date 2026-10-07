@@ -31,10 +31,10 @@
       "serviceAccountsEnabled": false,
       "standardFlowEnabled": true,
       "redirectUris": [
-        "http://localhost:8081/login/oauth2/code/*"
+        "http://localhost:8080/login/oauth2/code/*"
       ],
       "webOrigins": [
-        "http://localhost:8081"
+        "http://localhost:8080"
       ]
     }
   ],

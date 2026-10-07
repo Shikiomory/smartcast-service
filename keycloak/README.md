@@ -7,7 +7,7 @@
 
 ### Проверка
 
-http://localhost:8080 - страница Keycloak.
+http://localhost:8180 - страница Keycloak.
 
 - Username: admin
 - Password: admin
@@ -22,7 +22,7 @@ http://localhost:8080 - страница Keycloak.
 
 ### Проверка авторизации
 
-    http://localhost:8081/rest-api/author/hello
+    http://localhost:8080/rest-api/author/hello
 
 - Username: testuser
 - Password: testpass

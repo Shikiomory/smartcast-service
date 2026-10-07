@@ -1,16 +1,16 @@
 server:
-  port: 8081
+  port: 8080
 
 spring:
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:8080/realms/smartcast
+          issuer-uri: http://localhost:8180/realms/smartcast
       client:
         provider:
           keycloak:
-            issuer-uri: http://localhost:8080/realms/smartcast
+            issuer-uri: http://localhost:8180/realms/smartcast
         registration:
           keycloak:
             client-id: smartcast-client
