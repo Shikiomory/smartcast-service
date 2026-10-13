@@ -49,4 +49,9 @@ public class PublicController {
     public ResponseEntity<?> getAudioStream(@PathVariable Long id) {
         return ResponseEntity.ok(catalogService.getAudioStream(id));
     }
+
+    @GetMapping("/hello")
+    public ResponseEntity<String> getHello() {
+        return ResponseEntity.ok("Hello");
+    }
 }
