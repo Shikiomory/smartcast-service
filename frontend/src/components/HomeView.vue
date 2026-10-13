@@ -6,8 +6,6 @@ import { authService } from "../composables/authService.ts";
 const {playAudio} = audioService();
 const { authStatus } = authService()
 
-const soundFile = ref()
-
 interface Card {
   id: number
   title: string
@@ -29,42 +27,6 @@ function handleCardClick(card: Card) {
   playAudio("/ost.mp3")
 }
 
-function uploadFile(event: Event) {
-  const target = event.target as HTMLInputElement;
-
-  if (target.files && target.files[0]) {
-    soundFile.value = target.files[0]
-    console.log("Файл загружен с диска:" + soundFile.value.name)
-  }
-
-}
-
-async function uploadAudio() {
-  try {
-    if (!soundFile.value) {
-      alert("Файл не выбран")
-      return;
-    }
-
-    const formData = new FormData();
-
-    formData.append("file", soundFile.value);
-
-    const response = await fetch("/rest-api/author/new-material",
-        {
-          method: "POST",
-          body: formData
-        })
-
-    if (response.ok) {
-      soundFile.value = null;
-      alert("Файл загружен")
-    }
-  } catch (error) {
-    console.log("Ошибка при загрузке файла: " + error)
-  }
-}
-
 onMounted(() => {
   authStatus()
 })
@@ -84,11 +46,6 @@ onMounted(() => {
           <span class="card-duration">{{ card.duration }}</span>
         </div>
       </div>
-    </div>
-
-    <div class="uploader-container">
-      <input type="file" @change="uploadFile"/>
-      <button class="upload-button" @click="uploadAudio"> Загрузить </button>
     </div>
   </main>
 
@@ -144,13 +101,4 @@ main {
   font-size: 14px;
   color: gray;
 }
-
-
-
-/* загрузка файлов */
-.uploader-container {
-  width: 100%;
-  padding: 32px;
-}
-
 </style>

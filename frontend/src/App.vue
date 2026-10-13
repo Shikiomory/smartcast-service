@@ -1,10 +1,24 @@
 <script setup lang="ts">
 // import HelloWorld from './components/HelloWorld.vue'
-// import { RouterView, RouterLink } from 'vue-router'
-import {authService} from "./composables/authService"
-import { audioService } from "./composables/audioService.ts";
-const {login, registration, logout, isAuthenticated} = authService()
-const {isPlaying, duration, currentTime, playAudio, pauseAudio} = audioService();
+import { RouterView, RouterLink } from 'vue-router'
+import { SliderRoot, SliderTrack, SliderRange, SliderThumb } from "reka-ui";
+import { authService } from "./composables/authService"
+import { audioService } from "./composables/audioService";
+import {computed} from "vue";
+const { login, registration, logout, isAuthenticated } = authService()
+const { isPlaying, duration, currentTime, formatTime, playAudio, pauseAudio, seekAudio } = audioService();
+
+const progressValue = computed({
+  get() {
+    return [currentTime.value ?? 0]
+  },
+
+  set(value: number[]) {
+    if (value) {
+      seekAudio(value[0])
+    }
+  }
+})
 
 function togglePlayState() {
   if (isPlaying.value) {
@@ -15,6 +29,7 @@ function togglePlayState() {
     playAudio("/ost.mp3")
   }
 }
+
 
 </script>
 
@@ -47,8 +62,20 @@ function togglePlayState() {
 
 
   <footer v-if="duration" class="footer-player">
-    <button class="play-pause-button" @click="togglePlayState"> {{isPlaying ? 'Пауза' : 'Продолжить'}}</button>
-    <span class="audio-duration"> {{ currentTime + '/' + duration }} </span>
+    <button class="play-pause-button" @click="togglePlayState"> {{isPlaying ? '⏸' : '▶'}}</button>
+    <span class="audio-duration"> {{ formatTime(currentTime) + "/" + formatTime(duration)  }} </span>
+
+    <SliderRoot
+      v-model="progressValue"
+      :max="duration"
+      :step="1"
+      class="slider-root"
+    >
+      <SliderTrack class="slider-track">
+        <SliderRange class="slider-range"/>
+      </SliderTrack>
+      <SliderThumb class="slider-thumb"/>
+    </SliderRoot>
   </footer>
 </template>
 
@@ -85,14 +112,28 @@ header {
   background-color: gray; /* затемнение при наведении */
 }
 
+.navigation {
+  display: flex;
+  gap: 16px; /* или margin-right: 16px у ссылок */
+}
+
+.navigation a {
+  color: #94a3b8;
+  text-decoration: none;
+}
+
+.navigation a:hover {
+  color: white;
+}
+
 
 
 /* плеер */
 .footer-player {
   position: fixed;
   bottom: 5%;
-  left: 18%;
-  width: 60%;
+  left: 24%;
+  width: 50%;
   height: 60px;
   border-radius: 20px;
   background-color: gray;
@@ -115,5 +156,45 @@ header {
 
 .audio-duration {
   color: white;
+}
+
+.slider-root {
+  width: 100%;
+  height: 20px;
+  cursor: pointer;
+  user-select: none;
+  touch-action: none;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.slider-track {
+  background-color: #424453;
+  height: 6px;
+  flex-grow: 1;
+  position: relative;
+  border-radius: 20px;
+}
+
+.slider-range {
+  position: absolute;
+  height: 100%;
+  background-color: white;
+  border-radius: 20px;
+}
+
+.slider-thumb {
+  display: block;
+  width: 14px;
+  height: 12px;
+  background-color: white;
+  border-radius: 35%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition: transform 0.1s ease;
+}
+
+.slider-thumb:hover {
+  transform: scale(1.2);
 }
 </style>
