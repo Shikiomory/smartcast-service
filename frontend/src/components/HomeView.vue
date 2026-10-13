@@ -1,8 +1,10 @@
 <script setup lang="ts">
 
-import { ref } from "vue";
+import {onMounted, ref} from "vue";
 import { audioService } from "../composables/audioService.ts";
+import { authService } from "../composables/authService.ts";
 const {isPlaying, duration, currentTime, playAudio, pauseAudio} = audioService();
+const { login, registration, logout, authStatus, isAuthenticated } = authService()
 
 const soundFile = ref()
 
@@ -73,6 +75,9 @@ async function uploadAudio() {
   }
 }
 
+onMounted(() => {
+  authStatus()
+})
 </script>
 
 <template>
@@ -86,8 +91,9 @@ async function uploadAudio() {
     </div>
 
     <div class="auth-container">
-      <button>Войти</button>
-      <button>Регистрация</button>
+      <button v-if="!isAuthenticated()" class="authorization-button" @click="login">Войти</button>
+      <button v-if="!isAuthenticated()" class="registration-button" @click="registration">Регистрация</button>
+      <button v-if="isAuthenticated()" class="logout-button" @click="logout">Выйти</button>
     </div>
   </header>
 

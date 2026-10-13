@@ -12,13 +12,13 @@ interface AuthResponse {
 }
 
 const backendUrl = import.meta.env.VITE_API_URL;
-export const user = ref<UserState>( {
+const user = ref<UserState>( {
     isAuthenticated: false,
     username: "",
     roles: []
 })
 
-export async function authStatus() {
+async function authStatus() {
     try {
         const response = await fetch(backendUrl + "/rest-api/public/auth/me", {
             credentials: "include",
@@ -38,15 +38,19 @@ export async function authStatus() {
     }
 }
 
-export async function registration() {
+function isAuthenticated() {
+    return user.value.isAuthenticated
+}
+
+async function registration() {
     window.location.href = backendUrl + "/rest-api/public/auth/register";
 }
 
-export async function login() {
+async function login() {
     window.location.href = backendUrl + "/rest-api/public/auth/login";
 }
 
-export async function logout() {
+async function logout() {
     try {
         const response = await fetch(backendUrl + "/rest-api/public/auth/logout");
 
@@ -58,10 +62,22 @@ export async function logout() {
         console.log("Ошибка выхода: " + error);
     }
 }
+
 function resetAuth() {
     user.value = {
         isAuthenticated: false,
         username: "",
         roles: []
+    }
+}
+
+export function authService() {
+    return {
+        user,
+        isAuthenticated,
+        authStatus,
+        login,
+        registration,
+        logout,
     }
 }
