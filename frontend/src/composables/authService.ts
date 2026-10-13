@@ -1,7 +1,18 @@
 import {ref} from "vue";
 
+export interface UserState {
+    isAuthenticated: boolean;
+    username: string;
+    roles: string[];
+}
+
+interface AuthResponse {
+    username: string;
+    roles: string[];
+}
+
 const backendUrl = import.meta.env.VITE_API_URL;
-export const user = ref( {
+export const user = ref<UserState>( {
     isAuthenticated: false,
     username: "",
     roles: []
@@ -9,12 +20,12 @@ export const user = ref( {
 
 export async function authStatus() {
     try {
-        const response = await fetch(backendUrl + "/rest-api/public/me", {
+        const response = await fetch(backendUrl + "/rest-api/public/auth/me", {
             credentials: "include",
         });
 
         if (response.ok) {
-            const data = await response.json();
+            const data: AuthResponse = await response.json();
             user.value = {
                 isAuthenticated: true,
                 username: data.username,
