@@ -33,12 +33,14 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/rest-api/auth/**").permitAll()
                         .requestMatchers("/rest-api/author/**").hasAnyRole("AUTHOR", "ADMIN")
                         .requestMatchers("/rest-api/moderation/**").hasAnyRole("MODERATOR", "ADMIN")
                         .requestMatchers("/rest-api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/rest-api/public/**").permitAll()
                         .anyRequest().authenticated()
                 )
+
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                 )
