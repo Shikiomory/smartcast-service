@@ -3,10 +3,8 @@
 import {onMounted, ref} from "vue";
 import { audioService } from "../composables/audioService.ts";
 import { authService } from "../composables/authService.ts";
-const {isPlaying, duration, currentTime, playAudio, pauseAudio} = audioService();
-const { login, registration, logout, authStatus, isAuthenticated } = authService()
-
-const soundFile = ref()
+const {playAudio} = audioService();
+const { authStatus } = authService()
 
 interface Card {
   id: number
@@ -29,74 +27,12 @@ function handleCardClick(card: Card) {
   playAudio("/ost.mp3")
 }
 
-function togglePlayState() {
-  if (isPlaying.value) {
-    pauseAudio();
-  }
-  else {
-    // playAudio("https://apostol-space.tech/uploads/404a8e76b218762e9efe38108f16e080_e2a7d1be93b1ad3a6c036e7f6597d6c6.mp3");
-    playAudio("/ost.mp3")
-  }
-}
-
-function uploadFile(event: Event) {
-  const target = event.target as HTMLInputElement;
-
-  if (target.files && target.files[0]) {
-    soundFile.value = target.files[0]
-    console.log("Файл загружен с диска:" + soundFile.value.name)
-  }
-
-}
-
-async function uploadAudio() {
-  try {
-    if (!soundFile.value) {
-      alert("Файл не выбран")
-      return;
-    }
-
-    const formData = new FormData();
-
-    formData.append("file", soundFile.value);
-
-    const response = await fetch("/rest-api/author/new-material",
-        {
-          method: "POST",
-          body: formData
-        })
-
-    if (response.ok) {
-      soundFile.value = null;
-      alert("Файл загружен")
-    }
-  } catch (error) {
-    console.log("Ошибка при загрузке файла: " + error)
-  }
-}
-
 onMounted(() => {
   authStatus()
 })
 </script>
 
 <template>
-  <header>
-    <div class="logo-container">
-      <h1>SmartCast</h1>
-    </div>
-
-    <div class="search-container">
-      <input type="text" placeholder="Поиск..." />
-    </div>
-
-    <div class="auth-container">
-      <button v-if="!isAuthenticated()" class="authorization-button" @click="login">Войти</button>
-      <button v-if="!isAuthenticated()" class="registration-button" @click="registration">Регистрация</button>
-      <button v-if="isAuthenticated()" class="logout-button" @click="logout">Выйти</button>
-    </div>
-  </header>
-
   <main>
     <div class="content">
       <div v-for="card in cards" :key="card.id" class="card" @click="handleCardClick(card)">
@@ -111,51 +47,11 @@ onMounted(() => {
         </div>
       </div>
     </div>
-
-    <div class="uploader-container">
-      <input type="file" @change="uploadFile"/>
-      <button class="upload-button" @click="uploadAudio"> Загрузить </button>
-    </div>
   </main>
 
-  <footer class="footer-player">
-    <button class="play-pause-button" @click="togglePlayState"> {{isPlaying ? 'Пауза' : 'Продолжить'}}</button>
-    <span class="audio-duration"> {{ currentTime + '/' + duration }} </span>
-  </footer>
 </template>
 
 <style scoped>
-/* заголовок */
-header {
-  display: flex; /* построение в ряд */
-  justify-content: space-between; /* место между объектами */
-  align-items: center; /* выравнивание по вертикали по центру */
-  padding: 16px 32px; /* внутренние отступы */
-  border-bottom: 1px solid #2E303AFF;
-}
-
-.search-container input {
-  padding: 8px 16px; /* внутренние отступы */
-  width: 300px; /* ширина */
-  border-radius: 20px; /* округление */
-  border: 1px solid gray; /* обводка */
-
-}
-
-.auth-container button {
-  margin-left: 8px;
-  padding: 8px 16px; /* внутренние отступы */
-  cursor: pointer; /* смена курсора при наведении */
-  border-radius: 20px; /* округление */
-  border: 1px solid gray; /* обводка */
-  font-weight: bold; /* жирный шрифт */
-}
-
-.auth-container button:hover {
-  background-color: gray; /* затемнение при наведении */
-}
-
-
 /* главный блок */
 main {
   padding: 32px 32px; /* внутренние отступы */
@@ -204,44 +100,5 @@ main {
 .card-duration {
   font-size: 14px;
   color: gray;
-}
-
-
-
-/* загрузка файлов */
-.uploader-container {
-  width: 100%;
-  padding: 32px;
-}
-
-
-/* плеер */
-.footer-player {
-  position: fixed;
-  bottom: 5%;
-  left: 18%;
-  width: 60%;
-  height: 60px;
-  border-radius: 20px;
-  background-color: gray;
-  display: flex;
-  padding: 16px 32px;
-  align-items: center; /* выравнивание по вертикали по центру */
-  gap: 24px;
-}
-
-.play-pause-button {
-  cursor: pointer;
-  font-weight: bold;
-  border-radius: 20px;
-  padding: 8px 16px;
-}
-
-.play-pause-button:hover {
-  background-color: gray; /* затемнение при наведении */
-}
-
-.audio-duration {
-  color: white;
 }
 </style>
