@@ -17,3 +17,10 @@ spring:
             client-secret: CHANGE_ME_SECRET
             scope: openid, profile, email, roles
             authorization-grant-type: authorization_code
+
+keycloak:
+  admin:
+    server-url: http://localhost:8180
+    realm: smartcast
+    client-id: smartcast-admin
+    client-secret: SHOCgvs6fkpTVTf2NDXNfa3Omk73VnK3srgkaMVbhoSKLLOJ8oCF0RRJvAF3Y4EqAFWwEXnO7x7zJltSU8fXYO
