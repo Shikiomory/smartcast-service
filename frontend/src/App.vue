@@ -46,7 +46,7 @@ function togglePlayState() {
 
     <nav class="navigation">
       <RouterLink to="/" class="nav-item">Главная</RouterLink>
-      <RouterLink to="/profile" class="nav-item">Профиль</RouterLink>
+      <RouterLink v-if="isAuthenticated()" to="/profile" class="nav-item">Профиль</RouterLink>
     </nav>
 
     <div class="auth-container">

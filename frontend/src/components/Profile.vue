@@ -15,9 +15,6 @@ import {
 const { user } = authService()
 const soundFile = ref()
 
-// user.value.isAuthenticated = true
-user.value.username = "Shikomory"
-user.value.roles = ['admin', 'moderator']
 
 const initials = computed(() => {
   if (!user.value.username) return '?'
@@ -113,6 +110,11 @@ async function uploadAudio() {
           <div class="info-item">
             <span class="label">Имя пользователя</span>
             <span class="value">{{ user.username }}</span>
+            <span class="label">Фамилия и Имя пользователя</span>
+            <span class="value">{{ user.lastName + " " + user.firstName }}</span>
+            <span class="label">Enail</span>
+            <span class="value">{{ user.email }}</span>
+
           </div>
         </div>
       </TabsContent>

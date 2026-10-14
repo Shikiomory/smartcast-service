@@ -2,21 +2,31 @@ import {ref} from "vue";
 
 export interface UserState {
     isAuthenticated: boolean;
-    username: string;
-    roles: string[];
-}
-
-interface AuthResponse {
+    id: number | null;
     username: string;
     email: string;
     firstName: string;
     lastName: string;
+    roles: string[];
+}
+
+interface AuthResponse {
+    id: number;
+    username: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    roles: string[];
 }
 
 const backendUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
 const user = ref<UserState>({
     isAuthenticated: false,
+    id: null,
     username: "",
+    email: "",
+    firstName: "",
+    lastName: "",
     roles: []
 })
 
@@ -30,8 +40,12 @@ async function authStatus() {
             const data: AuthResponse = await response.json();
             user.value = {
                 isAuthenticated: true,
+                id: data.id,
                 username: data.username,
-                roles: []
+                email: data.email,
+                firstName: data.firstName,
+                lastName: data.lastName,
+                roles: data.roles,
             };
         } else {
             resetAuth()
@@ -62,7 +76,11 @@ async function logout() {
 function resetAuth() {
     user.value = {
         isAuthenticated: false,
+        id: null,
         username: "",
+        email: "",
+        firstName: "",
+        lastName: "",
         roles: []
     }
 }
