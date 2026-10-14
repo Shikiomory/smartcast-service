@@ -90,7 +90,6 @@ async function uploadAudio() {
       </div>
     </div>
 
-    <!-- Reka UI: Вкладки -->
     <TabsRoot default-value="general" class="tabs-root">
       <TabsList class="tabs-list">
         <TabsTrigger value="general" class="tabs-trigger">
@@ -104,22 +103,23 @@ async function uploadAudio() {
         </TabsTrigger>
       </TabsList>
 
-      <!-- Контент вкладки "Общие данные" -->
       <TabsContent value="general" class="tabs-content">
         <div class="info-grid">
           <div class="info-item">
             <span class="label">Имя пользователя</span>
             <span class="value">{{ user.username }}</span>
-            <span class="label">Фамилия и Имя пользователя</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Личные данные</span>
             <span class="value">{{ user.lastName + " " + user.firstName }}</span>
-            <span class="label">Enail</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Email</span>
             <span class="value">{{ user.email }}</span>
-
           </div>
         </div>
       </TabsContent>
 
-      <!-- Контент вкладки "Мои подкасты" -->
       <TabsContent value="podcasts" class="tabs-content">
         <div class="empty-state">
           <p>Вы пока не загрузили ни одного подкаста.</p>
@@ -131,7 +131,6 @@ async function uploadAudio() {
         </div>
       </TabsContent>
 
-      <!-- Контент вкладки "История" -->
       <TabsContent value="history" class="tabs-content">
         <div class="empty-state">
           <p>История прослушиваний пуста.</p>
@@ -172,6 +171,7 @@ async function uploadAudio() {
   font-size: 20px;
   font-weight: bold;
   margin-bottom: 8px;
+  margin-top: 8px;
 }
 
 .role-badge {
