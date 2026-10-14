@@ -55,19 +55,8 @@ async function login() {
 }
 
 async function logout() {
-    try {
-        const response = await fetch(backendUrl + "/rest-api/auth/logout", {
-            method: "POST",
-            credentials: "include",
-        });
-
-        if (response.ok) {
-            console.log("Пользователь " + user.value.username + " успешно вышел")
-            resetAuth()
-        }
-    } catch (error) {
-        console.log("Ошибка выхода: " + error);
-    }
+    resetAuth()
+    window.location.href = backendUrl + "/rest-api/auth/logout";
 }
 
 function resetAuth() {
