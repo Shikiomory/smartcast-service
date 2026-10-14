@@ -1,0 +1,21 @@
+spring:
+  security:
+    oauth2:
+      # Для валидации Bearer токенов на REST-эндпоинтах
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8180/realms/smartcast
+          jwk-set-uri: http://keycloak:8080/realms/smartcast/protocol/openid-connect/certs
+
+      # Для BFF (OAuth2 Login / Authorization Code flow)
+      client:
+        provider:
+          keycloak:
+            issuer-uri: ""
+            # Браузер перенаправляется на внешний порт хоста (Frontchannel):
+            authorization-uri: http://localhost:8180/realms/smartcast/protocol/openid-connect/auth
+            # Бэкенд запрашивает код и инфо по внутренней сети Docker (Backchannel):
+            token-uri: http://keycloak:8080/realms/smartcast/protocol/openid-connect/token
+            user-info-uri: http://keycloak:8080/realms/smartcast/protocol/openid-connect/userinfo
+            jwk-set-uri: http://keycloak:8080/realms/smartcast/protocol/openid-connect/certs
+            user-name-attribute: preferred_username

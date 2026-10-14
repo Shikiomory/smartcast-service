@@ -6,12 +6,14 @@ import com.sbertech.core.dto.MaterialDto;
 import com.sbertech.core.dto.TagDto;
 import com.sbertech.app.service.CatalogService;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -48,5 +50,15 @@ public class PublicController {
     @GetMapping("/stream/{id}")
     public ResponseEntity<?> getAudioStream(@PathVariable Long id) {
         return ResponseEntity.ok(catalogService.getAudioStream(id));
+    }
+
+    @GetMapping("/hello")
+    public ResponseEntity<String> getHello() {
+        return ResponseEntity.ok("Hello");
+    }
+
+    @GetMapping("/auth/login")
+    public ResponseEntity<Void> login() {
+        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create("/oauth2/authorization/keycloak")).build();
     }
 }
