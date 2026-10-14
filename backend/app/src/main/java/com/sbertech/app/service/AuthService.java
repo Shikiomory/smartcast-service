@@ -10,17 +10,21 @@ import org.springframework.stereotype.Service;
 @AllArgsConstructor
 public class AuthService {
 
-    // заглушка (потом Keycloak Admin API добавить)
+    private KeycloakAdminService keycloakAdminService;
+
+
     public UserDto register(RegisterRequestDto request) {
+        keycloakAdminService.createUser(request);
+
         UserDto user = new UserDto();
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
+        user.setBlocked(false);
         return user;
     }
 
-    // заглушка для Keycloak
     public UserDto getCurrentUser(OidcUser oidcUser) {
         UserDto user = new UserDto();
         user.setUsername(oidcUser.getPreferredUsername());

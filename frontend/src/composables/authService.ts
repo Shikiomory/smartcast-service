@@ -8,11 +8,13 @@ export interface UserState {
 
 interface AuthResponse {
     username: string;
-    roles: string[];
+    email: string;
+    firstName: string;
+    lastName: string;
 }
 
-const backendUrl = import.meta.env.VITE_API_URL;
-const user = ref<UserState>( {
+const backendUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
+const user = ref<UserState>({
     isAuthenticated: false,
     username: "",
     roles: []
@@ -20,7 +22,7 @@ const user = ref<UserState>( {
 
 async function authStatus() {
     try {
-        const response = await fetch(backendUrl + "/rest-api/public/auth/me", {
+        const response = await fetch(backendUrl + "/rest-api/auth/status", {
             credentials: "include",
         });
 
@@ -29,8 +31,10 @@ async function authStatus() {
             user.value = {
                 isAuthenticated: true,
                 username: data.username,
-                roles: data.roles
+                roles: []
             };
+        } else {
+            resetAuth()
         }
     } catch (error) {
         console.log("Ошибка проверки авторизации: " + error);
@@ -43,16 +47,19 @@ function isAuthenticated() {
 }
 
 async function registration() {
-    window.location.href = backendUrl + "/rest-api/public/auth/register";
+    window.location.href = backendUrl + "/rest-api/auth/login";
 }
 
 async function login() {
-    window.location.href = backendUrl + "/rest-api/public/auth/login";
+    window.location.href = backendUrl + "/rest-api/auth/login";
 }
 
 async function logout() {
     try {
-        const response = await fetch(backendUrl + "/rest-api/public/auth/logout");
+        const response = await fetch(backendUrl + "/rest-api/auth/logout", {
+            method: "POST",
+            credentials: "include",
+        });
 
         if (response.ok) {
             console.log("Пользователь " + user.value.username + " успешно вышел")
