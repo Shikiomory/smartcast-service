@@ -11,6 +11,8 @@ interface AuthResponse {
     email: string;
     firstName: string;
     lastName: string;
+    role: string | null;
+    roles: string[] | null;
 }
 
 const backendUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
@@ -31,7 +33,7 @@ async function authStatus() {
             user.value = {
                 isAuthenticated: true,
                 username: data.username,
-                roles: []
+                roles: data.roles ?? []
             };
         } else {
             resetAuth()
