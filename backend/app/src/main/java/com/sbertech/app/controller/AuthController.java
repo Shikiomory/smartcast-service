@@ -19,9 +19,11 @@ public class AuthController {
 
     private AuthService authService;
 
-    @PostMapping("/register")
-    public ResponseEntity<UserDto> register(@RequestBody RegisterRequestDto request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
+    @GetMapping("/register")
+    public ResponseEntity<Void> register(@RequestBody RegisterRequestDto request) {
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create("/oauth2/authorization/keycloak?action=register"))
+                .build();
     }
 
     @GetMapping("/login")
@@ -37,10 +39,5 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         return ResponseEntity.ok(authService.getCurrentUser(user));
-    }
-
-    @PostMapping("/logout")
-    public ResponseEntity<Void> logout() {
-        return ResponseEntity.ok().build();
     }
 }

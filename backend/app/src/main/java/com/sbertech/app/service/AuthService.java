@@ -8,7 +8,11 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,8 +29,8 @@ public class AuthService {
         user.setEmail(request.getEmail());
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
-        user.setBlocked(false);
         user.setRoles(Set.of(RoleEnum.USER));
+        user.setBlocked(false);
         user.setRole(RoleEnum.USER);
         return user;
     }
