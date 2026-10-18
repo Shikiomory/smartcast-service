@@ -3,7 +3,7 @@ package com.sbertech.core.dto;
 import com.sbertech.core.RoleEnum;
 import lombok.Data;
 
-import java.util.List;
+import java.util.Set;
 
 @Data
 public class UserDto {
@@ -12,6 +12,7 @@ public class UserDto {
     private String email;
     private String firstName;
     private String lastName;
-    private List<RoleEnum> roles;
+    private RoleEnum role;
+    private Set<RoleEnum> roles;
     private boolean blocked;
 }

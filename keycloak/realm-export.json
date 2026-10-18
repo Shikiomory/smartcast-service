@@ -35,13 +35,44 @@
         "http://localhost:5173/*",
         "http://localhost:5173/"
       ],
-
       "webOrigins": [
         "http://localhost:8080",
         "http://localhost:5173"
+      ],
+
+      "protocolMappers": [
+        {
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "foo",
+            "introspection.token.claim": "true",
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String",
+            "multivalued": "true"
+          }
+        }
       ]
+    },
+    {
+      "clientId": "smartcast-admin",
+      "name": "Smartcast Admin",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "SHOCgvs6fkpTVTf2NDXNfa3Omk73VnK3srgkaMVbhoSKLLOJ8oCF0RRJvAF3Y4EqAFWwEXnO7x7zJltSU8fXYO",
+      "protocol": "openid-connect",
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "redirectUris": [],
+      "webOrigins": []
     }
   ],
+
   "users": [
     {
       "username": "testuser",
