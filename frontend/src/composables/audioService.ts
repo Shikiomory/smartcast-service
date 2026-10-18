@@ -25,6 +25,8 @@ function stopTimer() {
 function getCurrentTime() {
     currentTime.value = sound?.seek() ?? null;
 }
+
+
 function playAudio(url: string) {
     if (currentUrl.value !== url) {
         sound?.stop()
@@ -54,13 +56,30 @@ function pauseAudio() {
     }
 }
 
+function seekAudio(value: number) {
+    sound?.seek(value)
+    currentTime.value = value
+}
+
+function formatTime(value: number | null) {
+    if (value || value === 0) {
+        const mins = Math.floor(value / 60);
+        const secs = Math.floor(value % 60);
+        const formattedSecs = secs < 10 ? `0${secs}` : secs;
+        return `${mins}:${formattedSecs}`;
+    }
+    return "-:-"
+}
+
 export function audioService() {
     return {
         isPlaying,
         volume,
         duration,
         currentTime,
+        formatTime,
         playAudio,
         pauseAudio,
+        seekAudio,
     }
 }

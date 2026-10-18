@@ -3,7 +3,7 @@
   "enabled": true,
   "displayName": "Smartcast",
   "sslRequired": "external",
-  "registrationAllowed": false,
+  "registrationAllowed": true,
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
   "resetPasswordAllowed": true,
@@ -13,7 +13,7 @@
   "ssoSessionMaxLifespan": 36000,
   "roles": {
     "realm": [
-      { "name": "LISTENER", "description": "Слушатель" },
+      { "name": "USER", "description": "Слушатель" },
       { "name": "AUTHOR", "description": "Автор" },
       { "name": "MODERATOR", "description": "Модератор" },
       { "name": "ADMIN", "description": "Администратор" }
@@ -31,10 +31,67 @@
       "serviceAccountsEnabled": false,
       "standardFlowEnabled": true,
       "redirectUris": [
-        "http://localhost:8080/login/oauth2/code/*"
+        "http://localhost:8080/login/oauth2/code/*",
+        "http://localhost:5173/*",
+        "http://localhost:5173/"
       ],
       "webOrigins": [
-        "http://localhost:8080"
+        "http://localhost:8080",
+        "http://localhost:5173"
+      ],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ]
+    },
+    {
+      "clientId": "smartcast-admin",
+      "name": "Smartcast Admin",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "SHOCgvs6fkpTVTf2NDXNfa3Omk73VnK3srgkaMVbhoSKLLOJ8oCF0RRJvAF3Y4EqAFWwEXnO7x7zJltSU8fXYO",
+      "protocol": "openid-connect",
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "redirectUris": [],
+      "webOrigins": []
+    }
+  ],
+  "clientScopes": [
+    {
+      "name": "roles",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "false",
+        "display.on.consent.screen": "true"
+      },
+      "protocolMappers": [
+        {
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "foo",
+            "introspection.token.claim": "true",
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String",
+            "multivalued": "true"
+          }
+        }
       ]
     }
   ],
@@ -53,7 +110,7 @@
           "temporary": false
         }
       ],
-      "realmRoles": ["LISTENER", "AUTHOR"]
+      "realmRoles": ["USER", "AUTHOR"]
     }
   ]
 }
