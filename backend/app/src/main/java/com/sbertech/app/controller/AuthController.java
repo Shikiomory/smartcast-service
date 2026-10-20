@@ -4,6 +4,7 @@ import com.sbertech.app.service.AuthService;
 import com.sbertech.core.dto.RegisterRequestDto;
 import com.sbertech.core.dto.UserDto;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -14,10 +15,9 @@ import java.net.URI;
 
 @RestController
 @RequestMapping("/rest-api/auth")
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class AuthController {
-
-    private AuthService authService;
+    private final AuthService authService;
 
     @GetMapping("/register")
     public ResponseEntity<Void> register(@RequestBody RegisterRequestDto request) {

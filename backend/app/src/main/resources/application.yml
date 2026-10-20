@@ -1,26 +1,36 @@
 server:
   port: 8080
 
+frontend:
+  url: ${FRONTEND_URL:http://localhost:5173}
+
+keycloak:
+  internal-url: ${KEYCLOAK_INTERNAL_URL:http://localhost:8180}
+  external-url: ${KEYCLOAK_EXTERNAL_URL:http://localhost:8180}
+  admin:
+    server-url: ${keycloak.internal-url}
+    realm: smartcast
+    client-id: smartcast-admin
+    client-secret: SHOCgvs6fkpTVTf2NDXNfa3Omk73VnK3srgkaMVbhoSKLLOJ8oCF0RRJvAF3Y4EqAFWwEXnO7x7zJltSU8fXYO
+
 spring:
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:8180/realms/smartcast
+          jwk-set-uri: ${keycloak.internal-url}/realms/smartcast/protocol/openid-connect/certs
       client:
         provider:
           keycloak:
-            issuer-uri: http://localhost:8180/realms/smartcast
+            authorization-uri: ${keycloak.external-url}/realms/smartcast/protocol/openid-connect/auth
+            token-uri: ${keycloak.internal-url}/realms/smartcast/protocol/openid-connect/token
+            user-info-uri: ${keycloak.internal-url}/realms/smartcast/protocol/openid-connect/userinfo
+            jwk-set-uri: ${keycloak.internal-url}/realms/smartcast/protocol/openid-connect/certs
+            user-name-attribute: preferred_username
         registration:
           keycloak:
             client-id: smartcast-client
             client-secret: CHANGE_ME_SECRET
             scope: openid, profile, email, roles
             authorization-grant-type: authorization_code
-
-keycloak:
-  admin:
-    server-url: http://localhost:8180
-    realm: smartcast
-    client-id: smartcast-admin
-    client-secret: SHOCgvs6fkpTVTf2NDXNfa3Omk73VnK3srgkaMVbhoSKLLOJ8oCF0RRJvAF3Y4EqAFWwEXnO7x7zJltSU8fXYO
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"

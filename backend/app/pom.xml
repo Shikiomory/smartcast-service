@@ -24,23 +24,16 @@
             <artifactId>core</artifactId>
         </dependency>
 
-        <!-- для REST-контроллеров -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-
-        <!-- Keycloak, Spring Security -->
+        <!-- Модуль keycloak -->
         <dependency>
             <groupId>com.sbertech</groupId>
             <artifactId>security</artifactId>
         </dependency>
 
-        <!-- Lombok -->
+        <!-- для REST-контроллеров -->
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <optional>true</optional>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
     </dependencies>
 

@@ -1,5 +1,6 @@
 package com.sbertech.security.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -8,9 +9,8 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper;
-import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInitiatedLogoutSuccessHandler;
-import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.core.oidc.user.OidcUserAuthority;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
@@ -19,6 +19,7 @@ import org.springframework.security.web.authentication.logout.LogoutSuccessHandl
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.HashSet;
 import java.util.List;
@@ -29,8 +30,18 @@ import java.util.Set;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    @Value("${keycloak.external-url:http://localhost:8180}")
+    private String keycloakExternalUrl;
+
+    @Value("${spring.security.oauth2.client.registration.keycloak.client-id}")
+    private String clientId;
+
+    @Value("${frontend.url:http://localhost:5173}")
+    private String frontendUrl;
+
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, ClientRegistrationRepository clientRegistrationRepository) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
@@ -50,13 +61,13 @@ public class SecurityConfig {
                         .userInfoEndpoint(userInfo -> userInfo
                                 .userAuthoritiesMapper(userAuthoritiesMapper())
                         )
-                        .successHandler(new SimpleUrlAuthenticationSuccessHandler("http://localhost:5173/"))
+                        .successHandler(new SimpleUrlAuthenticationSuccessHandler(frontendUrl))
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
                 )
                 .logout(logout -> logout
-                        .logoutSuccessHandler(oidcLogoutSuccessHandler(clientRegistrationRepository))
+                        .logoutSuccessHandler(oidcLogoutSuccessHandler())
                         .logoutUrl("/rest-api/auth/logout")
                         .invalidateHttpSession(true)
                         .clearAuthentication(true)
@@ -65,18 +76,25 @@ public class SecurityConfig {
         return http.build();
     }
 
-    private LogoutSuccessHandler oidcLogoutSuccessHandler(ClientRegistrationRepository clientRegistrationRepository) {
-        OidcClientInitiatedLogoutSuccessHandler handler =
-                new OidcClientInitiatedLogoutSuccessHandler(clientRegistrationRepository);
-        handler.setPostLogoutRedirectUri("http://localhost:5173/");
-        return handler;
+    private LogoutSuccessHandler oidcLogoutSuccessHandler() {
+        return (request, response, authentication) -> {
+            String logoutUrl = keycloakExternalUrl + "/realms/smartcast/protocol/openid-connect/logout";
+            UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(logoutUrl)
+                    .queryParam("client_id", clientId)
+                    .queryParam("post_logout_redirect_uri", frontendUrl);
+            if (authentication != null && authentication.getPrincipal() instanceof OidcUser user) {
+                builder.queryParam("id_token_hint", user.getIdToken().getTokenValue());
+            }
+
+            response.sendRedirect(builder.toUriString());
+        };
     }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowedOrigins(List.of("http://localhost:5173"));
+        config.setAllowedOrigins(List.of(frontendUrl));
         config.setAllowCredentials(true);
         config.setAllowedHeaders(List.of("*"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
