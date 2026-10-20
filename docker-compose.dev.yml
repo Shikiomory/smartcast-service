@@ -8,6 +8,12 @@ services:
     ports:
       - "8080:8080"
 
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
     volumes:
       - ./backend:/app
       - ~/.m2:/root/.m2
@@ -16,13 +22,61 @@ services:
 
     environment:
       - SPRING_PROFILES_ACTIVE=dev
+      - KEYCLOAK_INTERNAL_URL=http://keycloak:8080
+      - KEYCLOAK_EXTERNAL_URL=http://localhost:8180
+      - FRONTEND_URL=http://localhost:5173
       - DB_URL=jdbc:postgresql://postgres:5432/SmartCast
       - DB_USERNAME=${DB_USERNAME:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-smartcast_dev}
 
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "8080"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+      start_period: 30s
+
+  smartcast-frontend:
+    build:
+      context: ./frontend
+    container_name: smartcast-frontend-dev
+    ports:
+      - "5173:5173"
     depends_on:
-      postgres:
-        condition: service_healthy
+      - smartcast-backend
+    volumes:
+      - ./frontend:/frontend
+      - /frontend/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8080
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: smartcast-keycloak
+    command: start-dev --import-realm
+
+    ports:
+      - "8180:8080"
+
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+
+      KC_HOSTNAME: http://localhost:8180
+      KC_HOSTNAME_STRICT_BACKCHANNEL: "false"
+      KC_HEALTH_ENABLED: "true"
+
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/127.0.0.1/8080"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+      - keycloak_data:/opt/keycloak/data
+
+    restart: unless-stopped
 
   postgres:
     image: postgres:18-alpine
@@ -43,4 +97,5 @@ services:
       start_period: 10s
 
 volumes:
+  keycloak_data:
   postgres_data:
