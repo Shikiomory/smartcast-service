@@ -4,6 +4,8 @@ import com.sbertech.core.dto.AuthorDto;
 import com.sbertech.core.dto.MaterialDetailsDto;
 import com.sbertech.core.dto.MaterialDto;
 import com.sbertech.core.dto.TagDto;
+import com.sbertech.core.dto.CategoryDto;
+import com.sbertech.core.dto.FileUrlDto;
 import com.sbertech.app.service.CatalogService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,6 +23,11 @@ import java.util.List;
 @AllArgsConstructor
 public class PublicController {
     private CatalogService catalogService;
+
+    @GetMapping("/categories")
+    public ResponseEntity<List<CategoryDto>> getCategories() {
+        return ResponseEntity.ok(catalogService.getCategoryList());
+    }
 
     //просмотр категорий
     @GetMapping("/tags")
@@ -48,7 +55,7 @@ public class PublicController {
 
     // получение аудио для плеера
     @GetMapping("/stream/{id}")
-    public ResponseEntity<?> getAudioStream(@PathVariable Long id) {
+    public ResponseEntity<FileUrlDto> getAudioStream(@PathVariable Long id) {
         return ResponseEntity.ok(catalogService.getAudioStream(id));
     }
 

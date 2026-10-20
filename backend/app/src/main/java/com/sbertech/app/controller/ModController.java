@@ -4,6 +4,7 @@ package com.sbertech.app.controller;
 import com.sbertech.core.dto.ComplainDto;
 import com.sbertech.core.dto.ComplainResponseDto;
 import com.sbertech.core.dto.MaterialDto;
+import com.sbertech.core.dto.MaterialDetailsDto;
 import com.sbertech.app.service.CatalogService;
 import com.sbertech.app.service.ComplainService;
 import com.sbertech.app.service.ModerationService;
@@ -44,7 +45,12 @@ public class ModController {
     //получение списка материалов (тоже в один эндпоинт можно с фильтрами)
     @GetMapping("/materials")
     public ResponseEntity<List<MaterialDto>> getMaterials() {
-        return ResponseEntity.ok(catalogService.getMaterials());
+        return ResponseEntity.ok(moderationService.getPendingMaterials());
+    }
+
+    @GetMapping("/materials/{id}")
+    public ResponseEntity<MaterialDetailsDto> getMaterialDetails(@PathVariable Long id) {
+        return ResponseEntity.ok(moderationService.getMaterialDetails(id));
     }
 
     //история
