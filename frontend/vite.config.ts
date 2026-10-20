@@ -11,5 +11,11 @@ export default defineConfig({
       usePolling: true, // Включаем опрос файлов для Docker на Windows
       interval: 100,
     },
+    proxy: { // Временно для связи с backend
+      '/rest-api': {
+        target: 'http://smartcast-backend-dev:8080',
+        changeOrigin: true,
+      }
+    }
   },
 })

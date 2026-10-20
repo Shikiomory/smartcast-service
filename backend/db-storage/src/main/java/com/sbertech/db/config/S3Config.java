@@ -58,4 +58,30 @@ public class S3Config {
 
         return builder.build();
     }
+
+    @Bean
+    public org.springframework.boot.CommandLineRunner initBucket(
+            S3Client s3Client,
+            @Value("${s3.bucket-name}") String bucketName) {
+        return args -> {
+            try {
+                // Проверяем, существует ли бакет
+                s3Client.headBucket(software.amazon.awssdk.services.s3.model.HeadBucketRequest.builder()
+                        .bucket(bucketName)
+                        .build());
+                System.out.println("Бакет '" + bucketName + "' уже существует в S3 хранилище.");
+            } catch (Exception e) {
+                try {
+                    // Если бакета нет, создаем его
+                    s3Client.createBucket(software.amazon.awssdk.services.s3.model.CreateBucketRequest.builder()
+                            .bucket(bucketName)
+                            .build());
+                    System.out.println("Бакет '" + bucketName + "' успешно создан!");
+                } catch (Exception ex) {
+                    System.err.println("Не удалось создать бакет '" + bucketName + "': " + ex.getMessage());
+                }
+            }
+        };
+    }
+
 }

@@ -64,5 +64,21 @@ services:
 
     restart: unless-stopped
 
+
+  rustfs:
+    image: rustfs/rustfs:latest
+    container_name: rustfs-dev
+    ports:
+      - "9000:9000" # порт для s3
+      - "9001:9001" # порт для консоли управления
+    environment:
+      - RUSTFS_ACCESS_KEY=admin123
+      - RUSTFS_SECRET_KEY=password123
+    volumes:
+      - rustfs_data:/data
+
+    restart: unless-stopped
+
 volumes:
   keycloak_data:
+  rustfs_data:

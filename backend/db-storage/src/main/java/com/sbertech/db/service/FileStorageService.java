@@ -64,13 +64,4 @@ public class FileStorageService {
         return s3Presigner.presignGetObject(presignRequest).url().toString();
     }
 
-    //    Поток для чтения
-    public InputStream getFileInputStream(String s3Key) {
-        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-                .bucket(bucketName)
-                .key(s3Key)
-                .build();
-
-        return s3Client.getObject(getObjectRequest);
-    }
 }
