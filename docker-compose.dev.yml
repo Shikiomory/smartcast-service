@@ -11,7 +11,8 @@ services:
     depends_on:
       keycloak:
         condition: service_healthy
-
+      postgres:
+        condition: service_healthy
     volumes:
       - ./backend:/app
       - ~/.m2:/root/.m2
@@ -23,6 +24,9 @@ services:
       - KEYCLOAK_INTERNAL_URL=http://keycloak:8080
       - KEYCLOAK_EXTERNAL_URL=http://localhost:8180
       - FRONTEND_URL=http://localhost:5173
+      - DB_URL=jdbc:postgresql://postgres:5432/SmartCast
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-smartcast_dev}
 
   smartcast-frontend:
     build:
@@ -64,5 +68,24 @@ services:
 
     restart: unless-stopped
 
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: SmartCast
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-smartcast_dev}
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./backend/app/src/main/resources/db/changelog/changes/001-create-base-schema.sql:/docker-entrypoint-initdb.d/001-create-base-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
 volumes:
   keycloak_data:
+  postgres_data:
