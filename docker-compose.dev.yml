@@ -13,7 +13,6 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
-
     volumes:
       - ./backend:/app
       - ~/.m2:/root/.m2
@@ -29,21 +28,12 @@ services:
       - DB_USERNAME=${DB_USERNAME:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-smartcast_dev}
 
-    healthcheck:
-      test: ["CMD", "nc", "-z", "127.0.0.1", "8080"]
-      interval: 5s
-      timeout: 3s
-      retries: 15
-      start_period: 30s
-
   smartcast-frontend:
     build:
       context: ./frontend
     container_name: smartcast-frontend-dev
     ports:
       - "5173:5173"
-    depends_on:
-      - smartcast-backend
     volumes:
       - ./frontend:/frontend
       - /frontend/node_modules
@@ -71,7 +61,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 15
-      start_period: 30s
+      start_period: 15s
     volumes:
       - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
       - keycloak_data:/opt/keycloak/data
