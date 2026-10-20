@@ -9,7 +9,8 @@ services:
       - "8080:8080"
 
     depends_on:
-      - keycloak
+      keycloak:
+        condition: service_healthy
 
     volumes:
       - ./backend:/app
@@ -19,6 +20,9 @@ services:
 
     environment:
       - SPRING_PROFILES_ACTIVE=dev
+      - KEYCLOAK_INTERNAL_URL=http://keycloak:8080
+      - KEYCLOAK_EXTERNAL_URL=http://localhost:8180
+      - FRONTEND_URL=http://localhost:5173
 
   smartcast-frontend:
     build:
@@ -46,7 +50,14 @@ services:
 
       KC_HOSTNAME: http://localhost:8180
       KC_HOSTNAME_STRICT_BACKCHANNEL: "false"
+      KC_HEALTH_ENABLED: "true"
 
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/127.0.0.1/8080"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 15s
     volumes:
       - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
       - keycloak_data:/opt/keycloak/data
