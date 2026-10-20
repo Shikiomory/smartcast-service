@@ -27,8 +27,20 @@ function handleCardClick(card: Card) {
   playAudio("/ost.mp3")
 }
 
+async function uploadAudio() {
+  try {
+    const response = await fetch("")
+    if (response.ok) {
+
+    }
+  } catch (error) {
+    console.log(error)
+  }
+}
+
 onMounted(() => {
   authStatus()
+  uploadAudio()
 })
 </script>
 

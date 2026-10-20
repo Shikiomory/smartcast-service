@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import {computed, ref} from 'vue'
+import {computed} from 'vue'
 import { authService } from '../composables/authService'
-
+import { RouterLink } from "vue-router";
+import { Button } from "@/components/ui/button";
 import {
   AvatarRoot,
   AvatarImage,
@@ -13,49 +14,12 @@ import {
 } from 'reka-ui'
 
 const { user } = authService()
-const soundFile = ref()
-
 
 const initials = computed(() => {
   if (!user.value.username) return '?'
   return user.value.username.slice(0, 2).toUpperCase()
 })
 
-function uploadFile(event: Event) {
-  const target = event.target as HTMLInputElement;
-
-  if (target.files && target.files[0]) {
-    soundFile.value = target.files[0]
-    console.log("Файл загружен с диска:" + soundFile.value.name)
-  }
-
-}
-
-async function uploadAudio() {
-  try {
-    if (!soundFile.value) {
-      alert("Файл не выбран")
-      return;
-    }
-
-    const formData = new FormData();
-
-    formData.append("file", soundFile.value);
-
-    const response = await fetch("/rest-api/author/new-material",
-        {
-          method: "POST",
-          body: formData
-        })
-
-    if (response.ok) {
-      soundFile.value = null;
-      alert("Файл загружен")
-    }
-  } catch (error) {
-    console.log("Ошибка при загрузке файла: " + error)
-  }
-}
 </script>
 
 <template>
@@ -123,11 +87,13 @@ async function uploadAudio() {
       <TabsContent value="podcasts" class="tabs-content">
         <div class="empty-state">
           <p>Вы пока не загрузили ни одного подкаста.</p>
+          <Button as-child variant="outline">
+            <RouterLink to="/upload">Загрузить подкаст</RouterLink>
+          </Button>
         </div>
 
         <div class="uploader-container">
-          <input type="file" @change="uploadFile"/>
-          <button class="upload-button" @click="uploadAudio"> Загрузить </button>
+
         </div>
       </TabsContent>
 
