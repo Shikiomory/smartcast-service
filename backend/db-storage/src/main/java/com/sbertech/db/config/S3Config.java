@@ -8,6 +8,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
+import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 import java.net.URI;
@@ -17,6 +18,9 @@ public class S3Config {
 
     @Value("${s3.endpoint:}")
     private String endpoint;
+
+    @Value("${s3.public-endpoint:${s3.endpoint:}}")
+    private String publicEndpoint;
 
     @Value("${s3.access-key}")
     private String accessKey;
@@ -33,12 +37,14 @@ public class S3Config {
                 .credentialsProvider(StaticCredentialsProvider.create(
                         AwsBasicCredentials.create(accessKey, secretKey)
                 ))
-                .region(Region.of(region));
+                .region(Region.of(region))
+                .serviceConfiguration(S3Configuration.builder()
+                        .pathStyleAccessEnabled(true)
+                        .build());
 
         // Если используем кастомный S3 провайдер (Yandex, VK)
         if (endpoint != null && !endpoint.isBlank()) {
             builder.endpointOverride(URI.create(endpoint));
-            builder.forcePathStyle(true);
         }
 
         return builder.build();
@@ -50,10 +56,15 @@ public class S3Config {
                 .credentialsProvider(StaticCredentialsProvider.create(
                         AwsBasicCredentials.create(accessKey, secretKey)
                 ))
-                .region(Region.of(region));
+                .region(Region.of(region))
+                .serviceConfiguration(S3Configuration.builder()
+                        .pathStyleAccessEnabled(true)
+                        // A browser must not need extra signed checksum headers.
+                        .checksumValidationEnabled(false)
+                        .build());
 
-        if (endpoint != null && !endpoint.isBlank()) {
-            builder.endpointOverride(URI.create(endpoint));
+        if (publicEndpoint != null && !publicEndpoint.isBlank()) {
+            builder.endpointOverride(URI.create(publicEndpoint));
         }
 
         return builder.build();

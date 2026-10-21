@@ -14,6 +14,12 @@ keycloak:
     client-secret: SHOCgvs6fkpTVTf2NDXNfa3Omk73VnK3srgkaMVbhoSKLLOJ8oCF0RRJvAF3Y4EqAFWwEXnO7x7zJltSU8fXYO
 
 spring:
+  config:
+    import: classpath:application-media.yml
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 110MB
   security:
     oauth2:
       resourceserver:
