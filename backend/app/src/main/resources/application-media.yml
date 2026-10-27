@@ -1,0 +1,10 @@
+s3:
+  endpoint: ${S3_ENDPOINT:http://localhost:9000}
+  public-endpoint: ${S3_PUBLIC_ENDPOINT:${s3.endpoint}}
+  access-key: ${S3_ACCESS_KEY:rustfsadmin}
+  secret-key: ${S3_SECRET_KEY:rustfsadmin}
+  region: ${S3_REGION:us-east-1}
+  bucket-name: ${S3_BUCKET_NAME:smartcast-bucket}
+  initialize-bucket: ${S3_INITIALIZE_BUCKET:true}
+  cors:
+    allowed-origin: ${FRONTEND_URL:http://localhost:5173}

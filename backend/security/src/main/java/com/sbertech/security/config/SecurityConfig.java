@@ -48,7 +48,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/rest-api/auth/**").permitAll()
                         .requestMatchers("/rest-api/author/**").hasAnyRole("AUTHOR", "ADMIN")
-                        .requestMatchers("/rest-api/moderation/**").hasAnyRole("MODERATOR", "ADMIN")
+                        .requestMatchers("/rest-api/moderation/**", "/rest-api/moderator/**").hasAnyRole("MODERATOR", "ADMIN")
                         .requestMatchers("/rest-api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/rest-api/public/**").permitAll()
                         .anyRequest().authenticated()

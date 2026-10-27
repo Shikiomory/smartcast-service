@@ -29,24 +29,30 @@ function getCurrentTime() {
 
 function playAudio(url: string) {
     if (currentUrl.value !== url) {
-        sound?.stop()
+        if (sound) {
+            sound.stop()
+            sound.unload()
+            sound = null
+        }
+
+        currentUrl.value = url;
         sound = new Howl({
             src: [url],
             volume: volume.value,
             html5: true,
             onload: () => {duration.value = sound?.duration() ?? null},
-            onplay: () => {startTimer() },
-            onpause: () => {stopTimer() },
-            onend: () => { isPlaying.value = false },
+            onplay: () => {startTimer(), isPlaying.value = true},
+            onpause: () => {stopTimer(), isPlaying.value = false },
+            onend: () => { isPlaying.value = false, isPlaying.value = false },
         });
+
+        sound.play();
+        return;
     }
 
     if (sound && !isPlaying.value) {
         sound.play();
     }
-
-    currentUrl.value = url;
-    isPlaying.value = true;
 }
 
 function pauseAudio() {
@@ -77,6 +83,7 @@ export function audioService() {
         volume,
         duration,
         currentTime,
+        currentUrl,
         formatTime,
         playAudio,
         pauseAudio,

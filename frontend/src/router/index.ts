@@ -4,6 +4,7 @@ const {authStatus, user} = authService()
 
 import HomeView from "../components/HomeView.vue";
 import Profile from "../components/Profile.vue";
+import Upload from "../components/Upload.vue";
 
 
 const routes: RouteRecordRaw[] = [
@@ -16,6 +17,14 @@ const routes: RouteRecordRaw[] = [
         path: '/profile',
         name: 'profile',
         component: Profile,
+        meta: {
+            requiresAuth: true,
+        }
+    },
+    {
+        path: '/upload',
+        name: 'upload',
+        component: Upload,
         meta: {
             requiresAuth: true,
         }

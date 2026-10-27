@@ -6,7 +6,7 @@ import { authService } from "./composables/authService"
 import { audioService } from "./composables/audioService";
 import {computed} from "vue";
 const { login, registration, logout, isAuthenticated } = authService()
-const { isPlaying, duration, currentTime, formatTime, playAudio, pauseAudio, seekAudio } = audioService();
+const { isPlaying, duration, currentTime, currentUrl, formatTime, playAudio, pauseAudio, seekAudio } = audioService();
 
 const progressValue = computed({
   get() {
@@ -26,7 +26,9 @@ function togglePlayState() {
   }
   else {
     // playAudio("https://apostol-space.tech/uploads/404a8e76b218762e9efe38108f16e080_e2a7d1be93b1ad3a6c036e7f6597d6c6.mp3");
-    playAudio("/ost.mp3")
+    if (currentUrl.value) {
+      playAudio(currentUrl.value)
+    }
   }
 }
 
