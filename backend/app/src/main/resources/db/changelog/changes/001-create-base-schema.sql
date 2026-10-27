@@ -149,3 +149,18 @@ CREATE INDEX idx_processing_job_status ON processing_job (status);
 --rollback DROP TABLE category;
 --rollback DROP TABLE app_user;
 --rollback DROP TABLE media_asset;
+
+--changeset smartcast:002-seed-initial-categories splitStatements:true
+--comment: Seed default categories for podcasts and audiobooks
+
+INSERT INTO category (name, description) VALUES
+                                             ('Технологии и IT', 'Подкасты и аудиокниги о разработке, архитектуре, AI и цифровом бизнесе'),
+                                             ('Бизнес и финансы', 'Предпринимательство, инвестиции, экономика и управление проектами'),
+                                             ('Наука и образование', 'Популярная наука, физика, биология, астрономия и образовательные курсы'),
+                                             ('Художественная литература', 'Фантастика, детектив, классика и авторские аудиоспектакли'),
+                                             ('История', 'Исторические лекции, расследования, биографии великих личностей'),
+                                             ('Психология и саморазвитие', 'Личная эффективность, майндсет, коммуникации и работа с привычками'),
+                                             ('Пивоварение', 'История, крафтовые технологии, ингредиенты и рецептуры напитков')
+    ON CONFLICT (name) DO NOTHING;
+
+--rollback DELETE FROM category WHERE name IN ('Технологии и IT', 'Бизнес и финансы', 'Наука и образование', 'Художественная литература', 'История', 'Психология и саморазвитие', 'Пивоварение');

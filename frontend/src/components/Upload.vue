@@ -41,31 +41,70 @@ import {
   TagsInputItemText,
 } from '@/components/ui/tags-input'
 import { Textarea } from '@/components/ui/textarea'
-import { FileCodeIcon, XIcon } from '@lucide/vue'
-import {ref} from "vue";
+import {Progress} from "@/components/ui/progress";
 
+import { FileCodeIcon, XIcon, Loader2, CheckCircle, AlertCircle, ArrowLeftIcon} from '@lucide/vue'
+import {computed, onMounted, onUnmounted, ref} from "vue"
+import axios from 'axios'
+import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
+
+import { useRouter, onBeforeRouteLeave} from "vue-router";
+const router = useRouter()
+
+interface metaData {
+  title: string
+  author: string
+  type: string
+  categoryId: string
+  tags: string[]
+  description: string
+}
+
+interface Category {
+  id: number
+  name: string
+  description: string | null
+}
 
 const soundFile = ref()
 const coverFile = ref()
 const coverPreviewUrl = ref()
+const categories = ref<Category[]>([])
 
-  interface metaData {
-    title: string
-    author: string
-    type: string
-    categoryId: string
-    tags: string[]
-    description: string
+const form = ref<metaData>({
+  title: '',
+  author: '',
+  type: 'PODCAST',
+  categoryId: '',
+  tags: [],
+  description: '',
+})
+
+const backendUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
+const uploadProgress = ref(0)
+const isSubmitting = ref(false)
+const errorMessage = ref<string | null>(null)
+const successMessage = ref<string | null>(null)
+
+let abortController: AbortController |null = null
+
+const isDirty = computed(() => {
+  return Boolean(
+      soundFile.value || coverFile.value || form.value.title.trim() || form.value.categoryId.trim() || form.value.author.trim() || form.value.description.trim()
+      || form.value.tags.length > 0
+  )
+})
+
+async function loadCategories() {
+  try {
+    const response = await axios.get<Category[]>(backendUrl + "/rest-api/public/categories", {
+      withCredentials: true,
+    })
+      categories.value = response.data
+  } catch(error) {
+    console.log("Ошибка загрузки категорий: " + error)
   }
-
-  const form = ref<metaData>({
-    title: '',
-    author: '',
-    type: '',
-    categoryId: '',
-    tags: [],
-    description: '',
-  })
+}
 
 function formatFileSize(bytes: number) {
   if (!bytes) return ''
@@ -83,7 +122,6 @@ function uploadFile(event: Event) {
 
 }
 
-//TODO: потом объединить
 function uploadCover(event: Event) {
   const target = event.target as HTMLInputElement;
 
@@ -99,10 +137,16 @@ function uploadCover(event: Event) {
 
 async function uploadAudio() {
   try {
-    if (!soundFile.value) {
-      alert("Файл не выбран")
+    if (!soundFile.value || !form.value.title.trim() || !form.value.categoryId) {
+      errorMessage.value = "Заполните название, выберите категорию и загрузите файл"
       return;
     }
+
+    isSubmitting.value = true
+    uploadProgress.value = 0
+    errorMessage.value = null
+    successMessage.value = null
+    abortController = new AbortController()
 
     const formData = new FormData();
 
@@ -119,27 +163,113 @@ async function uploadAudio() {
     form.value.tags.forEach(tag => {
       formData.append("tags", tag)
     })
-    const response = await fetch("/rest-api/author/new-material",
-        {
-          method: "POST",
-          body: formData
-        })
+    await axios.post(backendUrl + "/rest-api/author/new-material", formData, {
+      withCredentials: true,
+      signal: abortController?.signal,
+      onUploadProgress: (progress) => {
+        if (progress.total) {
+          uploadProgress.value = Math.round(progress.loaded * 100 / progress.total)
+        }
+      }
+    })
 
-    if (response.ok) {
-      soundFile.value = null;
-      alert("Файл загружен")
-    }
+    successMessage.value= 'Материал успешно загружен и отправлен на модерацию'
+    clearForm()
   } catch (error) {
-    console.log("Ошибка при загрузке файла: " + error)
+    let message = 'Ошибка 0, нет ошибок'
+
+    if (axios.isAxiosError(error)) {
+      if (axios.isCancel(error)) {
+        console.log("Пользователь отменил загрузку")
+        return
+      }
+      else if (error.response?.status === 403) {
+        message = "Доступ запрещен, загружать материал может только пользователь с ролью Автор"
+      }
+      else if (error.response?.status === 413) {
+        message = "Файл слишком большой."
+      }
+      else {
+        message = error.response?.data.detail || error.response?.data.message || error.message || 'Ошибка сети'
+      }
+    } else if (error instanceof Error) {
+      message = error.message
+    }
+    errorMessage.value = message
+  } finally {
+    isSubmitting.value = false
+    uploadProgress.value = 0
   }
 }
 
+function clearForm() {
+  form.value = {
+    title: '',
+    author: '',
+    type: 'PODCAST',
+    categoryId: '',
+    tags: [],
+    description: '',
+  }
+  removeCover()
+  removeAudio()
+  soundFile.value = null;
+}
+
+function removeAudio() {
+  soundFile.value = null
+}
+
+function removeCover() {
+  coverFile.value = null;
+  if (coverPreviewUrl.value) {
+    URL.revokeObjectURL(coverPreviewUrl.value)
+    coverPreviewUrl.value = null
+  }
+}
+
+function cancelUpload() {
+  if (abortController) {
+    abortController.abort()
+    abortController = null
+  }
+}
+
+function handleBeforeUnload(e: BeforeUnloadEvent) {
+  if (isSubmitting.value || isDirty.value) {
+    e.preventDefault()
+  }
+}
+
+onBeforeRouteLeave(() => {
+  if (isSubmitting.value || isDirty.value) {
+    const confirmLeave = window.confirm("Если вы уйдете, несохраненные данные будут утеряны. Продолжить?")
+    if (!confirmLeave) {
+      return false
+    }
+
+    cancelUpload()
+  }
+})
+onMounted(() => {
+  loadCategories()
+  window.addEventListener('beforeunload', handleBeforeUnload)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload)
+  cancelUpload()
+})
 
 </script>
 
 <template>
     <Card class="w-full max-w-3xl mx-auto my-10">
       <CardHeader>
+        <Button variant="ghost" class="w-fit" size="sm" aria-label="назад" @click="router.back()">
+          <ArrowLeftIcon class="size-4"></ArrowLeftIcon>
+          назад
+        </Button>
         <CardTitle>
           Загрузка аудиозаписи
         </CardTitle>
@@ -169,7 +299,7 @@ async function uploadAudio() {
               </AttachmentDescription>
             </AttachmentContent>
             <AttachmentActions>
-              <AttachmentAction aria-label="Удалить файл" @click="soundFile = null">
+              <AttachmentAction aria-label="Удалить файл" @click="removeAudio()">
                 <XIcon class="size-4"/>
               </AttachmentAction>
             </AttachmentActions>
@@ -195,7 +325,7 @@ async function uploadAudio() {
               </AttachmentDescription>
             </AttachmentContent>
             <AttachmentActions>
-              <AttachmentAction aria-label="Удалить обложку" @click="coverFile = null; coverPreviewUrl.value = null">
+              <AttachmentAction aria-label="Удалить обложку" @click="removeCover()">
                 <XIcon class="size-4"/>
               </AttachmentAction>
             </AttachmentActions>
@@ -232,12 +362,7 @@ async function uploadAudio() {
                 <SelectValue placeholder="Категория"></SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="1">Технологии и IT</SelectItem>
-                <SelectItem value="2">Бизнес и финансы</SelectItem>
-                <SelectItem value="3">Художественная литература</SelectItem>
-                <SelectItem value="4">История</SelectItem>
-                <SelectItem value="5">Пивоварение</SelectItem>
-                <SelectItem value="6">Наука и образование</SelectItem>
+                <SelectItem v-for="category in categories" :key="category.id" :value="String(category.id)"> {{ category.name }}</SelectItem>
               </SelectContent>
             </Select>
           </Field>
@@ -265,9 +390,35 @@ async function uploadAudio() {
 
 
       </CardContent>
+      <CardFooter class="flex flex-col gap-4">
+        <FieldGroup class="flex flex-col gap-4 sm:flex-row sm:items-center w-full">
+          <Field v-if="isSubmitting" class="w-full sm:max-w-xs">
+            <FieldLabel class="flex justify-between text-xs">
+              Отправка данных...
+              <FieldDescription as="span">{{ uploadProgress }}%</FieldDescription>
+            </FieldLabel>
+            <Progress :model-value="uploadProgress" class="h-2"/>
+          </Field>
 
-      <CardFooter class="flex justify-end">
-        <Button @click="uploadAudio" :disabled="!soundFile || form.title === ''"> Загрузить </Button>
+          <Button class="w-full sm:w-auto ml-auto" @click="uploadAudio" :disabled="!soundFile || isSubmitting">
+            <Loader2 v-if="isSubmitting" class="mr-2 size-4 animate-spin"/>
+            {{ isSubmitting ? 'Загрузка' : 'Загрузить' }}
+          </Button>
+        </FieldGroup>
+
+        <Alert v-if="errorMessage" variant="destructive" class="w-full">
+          <AlertCircle class="size-4" />
+          <AlertTitle>Ошибка при отправке</AlertTitle>
+          <AlertDescription>
+            {{errorMessage}}
+          </AlertDescription>
+        </Alert>
+
+        <Alert v-if="successMessage" class="w-full">
+          <CheckCircle class="size-4" />
+          <AlertTitle>Успешно</AlertTitle>
+          <AlertDescription> {{successMessage}}</AlertDescription>
+        </Alert>
       </CardFooter>
     </Card>
 </template>
