@@ -1,11 +1,16 @@
 server:
   port: 8080
+  servlet:
+    session:
+      cookie:
+        same-site: lax
+        secure: false
 
 frontend:
   url: ${FRONTEND_URL:http://localhost:5173}
 
 keycloak:
-  internal-url: ${KEYCLOAK_INTERNAL_URL:http://localhost:8180}
+  internal-url: ${KEYCLOAK_INTERNAL_URL:http://127.0.0.1:8180}
   external-url: ${KEYCLOAK_EXTERNAL_URL:http://localhost:8180}
   admin:
     server-url: ${keycloak.internal-url}
@@ -24,20 +29,17 @@ spring:
     oauth2:
       resourceserver:
         jwt:
+          issuer-uri: ${keycloak.external-url}/realms/smartcast
           jwk-set-uri: ${keycloak.internal-url}/realms/smartcast/protocol/openid-connect/certs
       client:
         provider:
           keycloak:
-            authorization-uri: ${keycloak.external-url}/realms/smartcast/protocol/openid-connect/auth
-            token-uri: ${keycloak.internal-url}/realms/smartcast/protocol/openid-connect/token
-            user-info-uri: ${keycloak.internal-url}/realms/smartcast/protocol/openid-connect/userinfo
-            jwk-set-uri: ${keycloak.internal-url}/realms/smartcast/protocol/openid-connect/certs
-            user-name-attribute: preferred_username
+            issuer-uri: ${keycloak.external-url}/realms/smartcast
         registration:
           keycloak:
             client-id: smartcast-client
             client-secret: CHANGE_ME_SECRET
-            scope: openid, profile, email, roles
+            scope: openid, profile, email
             authorization-grant-type: authorization_code
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
   datasource:

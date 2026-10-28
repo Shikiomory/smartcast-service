@@ -1,9 +1,7 @@
 package com.sbertech.app.controller;
 
 import com.sbertech.app.service.AuthService;
-import com.sbertech.core.dto.RegisterRequestDto;
 import com.sbertech.core.dto.UserDto;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,9 +18,9 @@ public class AuthController {
     private final AuthService authService;
 
     @GetMapping("/register")
-    public ResponseEntity<Void> register(@RequestBody RegisterRequestDto request) {
+    public ResponseEntity<Void> register() {
         return ResponseEntity.status(HttpStatus.FOUND)
-                .location(URI.create("/oauth2/authorization/keycloak?action=register"))
+                .location(URI.create("/oauth2/authorization/keycloak?kc_action=register"))
                 .build();
     }
 
