@@ -49,7 +49,7 @@ class ComposeMediaSmokeTest {
     private Long materialId;
 
     @Test
-    void realKeycloakAuthorUploadsAndAdminPublishesPlayableMaterial() throws Exception {
+    void realKeycloakAuthorUploadsAndModeratorPublishesAndWithdrawsPlayableMaterial() throws Exception {
         Throwable failure = null;
         try {
             adminToken = adminToken();
@@ -57,12 +57,14 @@ class ComposeMediaSmokeTest {
             createUser(password);
             grantRole("AUTHOR");
             grantRole("ADMIN");
-            String token = authorToken(password);
+            String categoryToken = userToken(password);
 
-            HttpResponse<byte[]> category = send("POST", backend + "/rest-api/admin/categories", token,
+            HttpResponse<byte[]> category = send("POST", backend + "/rest-api/admin/categories", categoryToken,
                     "application/json", bytes("{\"name\":\"" + marker + "\"}"));
             expectStatus(category, 201, "Create category using real ADMIN role");
             categoryId = number(category, "$.id");
+            revokeRole("ADMIN");
+            String authorAccessToken = userToken(password);
 
             byte[] audio = wave();
             byte[] cover = Base64.getDecoder().decode(
@@ -77,7 +79,7 @@ class ComposeMediaSmokeTest {
             part(multipart, boundary, "cover", coverName, "image/png", cover);
             multipart.write(bytes("--" + boundary + "--\r\n"));
 
-            HttpResponse<byte[]> upload = send("POST", backend + "/rest-api/author/new-material", token,
+            HttpResponse<byte[]> upload = send("POST", backend + "/rest-api/author/new-material", authorAccessToken,
                     "multipart/form-data; boundary=" + boundary, multipart.toByteArray());
             expectStatus(upload, 201, "Upload using real AUTHOR role");
             materialId = number(upload, "$.id");
@@ -90,21 +92,94 @@ class ComposeMediaSmokeTest {
                     null, null, null), 404, "Unapproved material stays private");
             expectStatus(send("GET", backend + "/rest-api/public/stream/" + materialId,
                     null, null, null), 404, "Unapproved stream stays private");
+            HttpResponse<byte[]> pendingCatalog = send("GET", backend + "/rest-api/public/materials",
+                    null, null, null);
+            expectStatus(pendingCatalog, 200, "Read public catalog before approval");
+            assertThat(ids(pendingCatalog)).doesNotContain(materialId);
+            expectStatus(send("POST", backend + "/rest-api/moderator/approve/" + materialId,
+                    authorAccessToken, null, null), 403, "AUTHOR cannot publish without a moderator role");
             checkAudio(text(upload, "$.audioUrl"), audio);
             HttpResponse<byte[]> image = send("GET", text(upload, "$.coverUrl"), null, null, null);
             expectStatus(image, 200, "Download uploaded cover");
             assertThat(image.body()).isEqualTo(cover);
 
+            grantRole("MODERATOR");
+            String moderatorAccessToken = userToken(password);
+            HttpResponse<byte[]> queue = send("GET", backend + "/rest-api/moderator/materials",
+                    moderatorAccessToken, null, null);
+            expectStatus(queue, 200, "MODERATOR can read the moderation queue");
+            assertThat(ids(queue)).contains(materialId);
+            HttpResponse<byte[]> preview = send("GET", backend + "/rest-api/moderator/materials/" + materialId,
+                    moderatorAccessToken, null, null);
+            expectStatus(preview, 200, "MODERATOR can preview a pending recording");
+            assertThat(text(preview, "$.status")).isEqualTo("PENDING_MODERATION");
+            checkAudio(text(preview, "$.audioUrl"), audio);
+
             HttpResponse<byte[]> approval = send("POST", backend + "/rest-api/moderator/approve/" + materialId,
-                    token, null, null);
-            expectStatus(approval, 200, "Approve using real ADMIN role");
+                    moderatorAccessToken, null, null);
+            expectStatus(approval, 200, "Approve using real MODERATOR role without ADMIN");
             assertThat(text(approval, "$.status")).isEqualTo("PUBLISHED");
+            HttpResponse<byte[]> publishedCatalog = send("GET", backend + "/rest-api/public/materials",
+                    null, null, null);
+            expectStatus(publishedCatalog, 200, "Read public catalog after approval");
+            assertThat(ids(publishedCatalog)).contains(materialId);
+            HttpResponse<byte[]> remainingQueue = send("GET", backend + "/rest-api/moderator/materials",
+                    moderatorAccessToken, null, null);
+            expectStatus(remainingQueue, 200, "Read moderation queue after approval");
+            assertThat(ids(remainingQueue)).doesNotContain(materialId);
+            expectStatus(send("POST", backend + "/rest-api/moderator/disapprove/" + materialId,
+                    moderatorAccessToken, null, null), 409, "A completed decision cannot be overwritten");
             expectStatus(send("GET", backend + "/rest-api/public/materials/" + materialId,
                     null, null, null), 200, "Published details are public");
             HttpResponse<byte[]> stream = send("GET", backend + "/rest-api/public/stream/" + materialId,
                     null, null, null);
             expectStatus(stream, 200, "Published stream is public");
             checkAudio(text(stream, "$.url"), audio);
+
+            HttpResponse<byte[]> publishedQueue = send("GET", backend + "/rest-api/moderator/materials?status=PUBLISHED",
+                    moderatorAccessToken, null, null);
+            expectStatus(publishedQueue, 200, "MODERATOR can list published recordings");
+            assertThat(ids(publishedQueue)).contains(materialId);
+            HttpResponse<byte[]> publishedPreview = send("GET", backend + "/rest-api/moderator/materials/" + materialId,
+                    moderatorAccessToken, null, null);
+            expectStatus(publishedPreview, 200, "MODERATOR can preview a published recording");
+            assertThat(text(publishedPreview, "$.status")).isEqualTo("PUBLISHED");
+            expectStatus(send("GET", backend + "/rest-api/moderator/materials?status=REJECTED",
+                    moderatorAccessToken, null, null), 400, "Unsupported moderation filter is rejected");
+            expectStatus(send("POST", backend + "/rest-api/moderator/unpublish/" + materialId,
+                    authorAccessToken, null, null), 403, "AUTHOR cannot withdraw a published recording");
+            HttpResponse<byte[]> withdrawal = send("POST", backend + "/rest-api/moderator/unpublish/" + materialId,
+                    moderatorAccessToken, null, null);
+            expectStatus(withdrawal, 200, "MODERATOR can withdraw a published recording");
+            assertThat(text(withdrawal, "$.status")).isEqualTo("PENDING_MODERATION");
+
+            expectStatus(send("GET", backend + "/rest-api/public/materials/" + materialId,
+                    null, null, null), 404, "Withdrawn details are no longer public");
+            expectStatus(send("GET", backend + "/rest-api/public/stream/" + materialId,
+                    null, null, null), 404, "A withdrawn recording cannot receive a new public link");
+            HttpResponse<byte[]> withdrawnCatalog = send("GET", backend + "/rest-api/public/materials",
+                    null, null, null);
+            expectStatus(withdrawnCatalog, 200, "Read public catalog after withdrawal");
+            assertThat(ids(withdrawnCatalog)).doesNotContain(materialId);
+            HttpResponse<byte[]> reviewQueue = send("GET", backend + "/rest-api/moderator/materials",
+                    moderatorAccessToken, null, null);
+            expectStatus(reviewQueue, 200, "Withdrawn recording returns to moderation");
+            assertThat(ids(reviewQueue)).contains(materialId);
+            HttpResponse<byte[]> remainingPublished = send("GET", backend + "/rest-api/moderator/materials?status=PUBLISHED",
+                    moderatorAccessToken, null, null);
+            expectStatus(remainingPublished, 200, "Read published recordings after withdrawal");
+            assertThat(ids(remainingPublished)).doesNotContain(materialId);
+            expectStatus(send("POST", backend + "/rest-api/moderator/unpublish/" + materialId,
+                    moderatorAccessToken, null, null), 409, "A withdrawn recording cannot be withdrawn twice");
+
+            HttpResponse<byte[]> reapproval = send("POST", backend + "/rest-api/moderator/approve/" + materialId,
+                    moderatorAccessToken, null, null);
+            expectStatus(reapproval, 200, "MODERATOR can republish a reviewed recording");
+            assertThat(text(reapproval, "$.status")).isEqualTo("PUBLISHED");
+            HttpResponse<byte[]> republishedStream = send("GET", backend + "/rest-api/public/stream/" + materialId,
+                    null, null, null);
+            expectStatus(republishedStream, 200, "Republished recording is playable without uploading again");
+            checkAudio(text(republishedStream, "$.url"), audio);
         } catch (Exception | AssertionError error) {
             failure = error;
             throw error;
@@ -142,16 +217,24 @@ class ComposeMediaSmokeTest {
     }
 
     private void grantRole(String role) throws Exception {
+        changeRole("POST", role);
+    }
+
+    private void revokeRole(String role) throws Exception {
+        changeRole("DELETE", role);
+    }
+
+    private void changeRole(String method, String role) throws Exception {
         HttpResponse<byte[]> representation = send("GET", keycloak + "/admin/realms/smartcast/roles/" + role,
                 adminToken, null, null);
         expectStatus(representation, 200, "Read temporary user's role");
-        HttpResponse<byte[]> response = send("POST", keycloak + "/admin/realms/smartcast/users/" + userId
+        HttpResponse<byte[]> response = send(method, keycloak + "/admin/realms/smartcast/users/" + userId
                         + "/role-mappings/realm", adminToken, "application/json",
                 bytes("[" + new String(representation.body(), StandardCharsets.UTF_8) + "]"));
-        expectStatus(response, 204, "Assign role to temporary user");
+        expectStatus(response, 204, "Update temporary user's role");
     }
 
-    private String authorToken(String password) throws Exception {
+    private String userToken(String password) throws Exception {
         // Read the existing client secret privately; never include credentials or token bodies in assertions.
         String export = Files.readString(Path.of("../../keycloak/realm-export.json"));
         List<String> secrets = JsonPath.read(export, "$.clients[?(@.clientId == 'smartcast-client')].secret");
@@ -160,7 +243,7 @@ class ComposeMediaSmokeTest {
                 + "&username=" + encode(marker) + "&password=" + encode(password);
         HttpResponse<byte[]> response = send("POST", keycloak + "/realms/smartcast/protocol/openid-connect/token",
                 null, "application/x-www-form-urlencoded", bytes(form));
-        expectStatus(response, 200, "Temporary author password grant");
+        expectStatus(response, 200, "Temporary user's password grant");
         return text(response, "$.access_token");
     }
 
@@ -313,6 +396,11 @@ class ComposeMediaSmokeTest {
     private static long number(HttpResponse<byte[]> response, String path) {
         Number value = JsonPath.read(new String(response.body(), StandardCharsets.UTF_8), path);
         return value.longValue();
+    }
+
+    private static List<Long> ids(HttpResponse<byte[]> response) {
+        List<Number> values = JsonPath.read(new String(response.body(), StandardCharsets.UTF_8), "$[*].id");
+        return values.stream().map(Number::longValue).toList();
     }
 
     private static void part(ByteArrayOutputStream out, String boundary, String name, String filename,

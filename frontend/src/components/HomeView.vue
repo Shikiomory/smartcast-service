@@ -1,104 +1,75 @@
 <script setup lang="ts">
+import {onMounted, ref} from 'vue'
+import {audioService} from '../composables/audioService'
+import {request} from '../composables/api'
+import type {Material} from '../types/material'
 
-import {onMounted, ref} from "vue";
-import { audioService } from "../composables/audioService.ts";
-import { authService } from "../composables/authService.ts";
-const {playAudio} = audioService();
-const { authStatus } = authService()
+const {playMaterial, currentMaterialId, isPlaying, loading: audioLoading, formatTime} = audioService()
+const materials = ref<Material[]>([])
+const loading = ref(false)
+const errorMessage = ref('')
 
-interface Card {
-  id: number
-  title: string
-  author: string
-  duration: string
+async function loadMaterials() {
+  loading.value = true
+  errorMessage.value = ''
+  try {
+    materials.value = await request<Material[]>('/rest-api/public/materials')
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : 'Не удалось загрузить каталог.'
+  } finally {
+    loading.value = false
+  }
 }
 
-
-const cards = ref<Card[]>([
-  { id: 1, title: 'Инквизитор Эйзенхорн - лучший цикл книг по Вархаммер 40.000', author: 'Практическая светлая магия', duration: '11:35'},
-  { id: 2, title: 'Всё о Java: экосистема, популярные фреймворки, системы сборки, JDK, JVM и будущее языка', author: 'Люди и код', duration: '1:13:34'},
-  { id: 3, title: 'Михаил Ершлов. Зачем пивовару нюхать скунса? [18+]', author: 'Два пива, пжлст!', duration: '1:09:40'},
-  { id: 4, title: 'Как учат английский по методам спецслужб? Секретный выпуск из архивов!', author: 'Без языка', duration: '25:49'},
-])
-
-function handleCardClick(card: Card) {
-  console.log(card);
-  // playAudio("https://apostol-space.tech/uploads/404a8e76b218762e9efe38108f16e080_e2a7d1be93b1ad3a6c036e7f6597d6c6.mp3")
-  playAudio("/ost.mp3")
-}
-
-onMounted(() => {
-  authStatus()
-})
+onMounted(loadMaterials)
 </script>
 
 <template>
-  <main>
-    <div class="content">
-      <div v-for="card in cards" :key="card.id" class="card" @click="handleCardClick(card)">
-        <div class="card-cover">
-<!--          <img class="card-img" :src="card.image" />-->
-          <h2>Обложка</h2>
-        </div>
-        <div class="card-content">
-          <h3 class="card-title">{{ card.title }}</h3>
-          <p class="card-author">{{ card.author }}</p>
-          <span class="card-duration">{{ card.duration }}</span>
-        </div>
+  <section class="catalog">
+    <div class="catalog-heading">
+      <div>
+        <h2>Каталог аудиоматериалов</h2>
+        <p>Подкасты и аудиокниги, прошедшие модерацию.</p>
       </div>
+      <button type="button" :disabled="loading" @click="loadMaterials">Обновить</button>
     </div>
-  </main>
-
+    <p v-if="loading" role="status">Загружаем каталог…</p>
+    <p v-else-if="errorMessage" class="error-message" role="alert">{{ errorMessage }}</p>
+    <p v-else-if="!materials.length" class="empty-state">Опубликованных материалов пока нет. Они появятся здесь после одобрения модератором.</p>
+    <div v-else class="content">
+      <article v-for="material in materials" :key="material.id" class="card">
+        <img v-if="material.coverUrl" class="card-cover" :src="material.coverUrl" :alt="'Обложка: ' + material.title" />
+        <div v-else class="cover-placeholder" aria-hidden="true">♫</div>
+        <div class="card-content">
+          <p class="card-category">{{ material.categoryName }} · {{ material.type === 'AUDIOBOOK' ? 'Аудиокнига' : 'Подкаст' }}</p>
+          <h3>{{ material.title }}</h3>
+          <p>{{ material.authorName }}</p>
+          <p v-if="material.description" class="description">{{ material.description }}</p>
+          <p v-if="material.durationMs !== null">{{ formatTime(material.durationMs / 1000) }}</p>
+          <button type="button" :disabled="audioLoading && currentMaterialId === material.id"
+                  @click="playMaterial(material.id, material.title)">
+            {{ currentMaterialId === material.id && audioLoading ? 'Загружаем…' : currentMaterialId === material.id && isPlaying ? 'Играет' : 'Слушать' }}
+          </button>
+        </div>
+      </article>
+    </div>
+  </section>
 </template>
 
 <style scoped>
-/* главный блок */
-main {
-  padding: 32px 32px; /* внутренние отступы */
-}
-
-.content {
-  display: grid; /* сетка */
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* автоматическое построение колонок по размеру */
-  gap: 24px; /* отступы между карточками */
-}
-
-
-
-/* карточки */
-.card {
-  background-color: #2E303A; /* цвет фона */
-  border-radius: 12px; /* округление */
-  padding: 16px; /* внутренние отступы */
-  cursor: pointer; /* смена курсора при наведении */
-  transition: background-color 0.3s ease; /* затемнение при наведении */
-}
-
-.card:hover {
-  background-color: #424453; /* затемнение при наведении */
-}
-
-.card-cover {
-
-}
-
-.card-title {
-  font-size: 18px;
-  font-weight: bold;
-  margin-bottom: 8px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.card-author {
-  font-size: 16px;
-  margin-bottom: 4px;
-}
-
-.card-duration {
-  font-size: 14px;
-  color: gray;
-}
+.catalog {padding: 32px; text-align: left;}
+.catalog-heading {display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;}
+.content {display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 24px;}
+.card {background: var(--code-bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;}
+.card-cover, .cover-placeholder {width: 100%; height: 190px; object-fit: cover;}
+.cover-placeholder {display: grid; place-items: center; background: var(--accent-bg); font-size: 48px;}
+.card-content {display: grid; gap: 10px; padding: 16px; overflow-wrap: anywhere;}
+h3 {margin: 0; color: var(--text-h); font-size: 18px;}
+.card-category {font-size: 13px;}
+.description {display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-line;}
+button {padding: 10px 16px; border: 1px solid var(--accent-border); border-radius: 8px; background: var(--accent-bg); color: var(--text-h); font: inherit; cursor: pointer;}
+button:disabled {opacity: .6; cursor: wait;}
+.error-message {color: #d65353;}
+.empty-state {padding: 24px 0;}
+@media (max-width: 600px) {.catalog {padding: 20px;}}
 </style>

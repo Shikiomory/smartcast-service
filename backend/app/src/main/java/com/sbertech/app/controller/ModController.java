@@ -8,6 +8,7 @@ import com.sbertech.core.dto.MaterialDetailsDto;
 import com.sbertech.app.service.CatalogService;
 import com.sbertech.app.service.ComplainService;
 import com.sbertech.app.service.ModerationService;
+import com.sbertech.app.entity.ContentStatus;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -41,11 +42,17 @@ public class ModController {
         return ResponseEntity.ok(moderationService.disapproveMaterial(id));
     }
 
+    @PostMapping("/unpublish/{id}")
+    public ResponseEntity<MaterialDto> unpublishMaterial(@PathVariable Long id) {
+        return ResponseEntity.ok(moderationService.unpublishMaterial(id));
+    }
+
 
     //получение списка материалов (тоже в один эндпоинт можно с фильтрами)
     @GetMapping("/materials")
-    public ResponseEntity<List<MaterialDto>> getMaterials() {
-        return ResponseEntity.ok(moderationService.getPendingMaterials());
+    public ResponseEntity<List<MaterialDto>> getMaterials(
+            @RequestParam(defaultValue = "PENDING_MODERATION") ContentStatus status) {
+        return ResponseEntity.ok(moderationService.getMaterials(status));
     }
 
     @GetMapping("/materials/{id}")

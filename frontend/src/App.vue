@@ -4,9 +4,11 @@ import { RouterView, RouterLink } from 'vue-router'
 import { SliderRoot, SliderTrack, SliderRange, SliderThumb } from "reka-ui";
 import { authService } from "./composables/authService"
 import { audioService } from "./composables/audioService";
-import {computed} from "vue";
-const { login, registration, logout, isAuthenticated } = authService()
-const { isPlaying, duration, currentTime, formatTime, playAudio, pauseAudio, seekAudio } = audioService();
+import {computed, onMounted} from "vue";
+const { login, registration, logout, isAuthenticated, user, authStatus } = authService()
+const canModerate = computed(() => user.value.isAuthenticated && user.value.roles.some(role => role === 'MODERATOR' || role === 'ADMIN'))
+const { isPlaying, duration, currentTime, currentMaterialId, currentTitle, loading, errorMessage, formatTime, resumeAudio, pauseAudio, seekAudio } = audioService();
+onMounted(authStatus)
 
 const progressValue = computed({
   get() {
@@ -14,7 +16,7 @@ const progressValue = computed({
   },
 
   set(value: number[]) {
-    if (value) {
+    if (value[0] !== undefined) {
       seekAudio(value[0])
     }
   }
@@ -25,8 +27,7 @@ function togglePlayState() {
     pauseAudio();
   }
   else {
-    // playAudio("https://apostol-space.tech/uploads/404a8e76b218762e9efe38108f16e080_e2a7d1be93b1ad3a6c036e7f6597d6c6.mp3");
-    playAudio("/ost.mp3")
+    resumeAudio()
   }
 }
 
@@ -47,6 +48,7 @@ function togglePlayState() {
     <nav class="navigation">
       <RouterLink to="/" class="nav-item">Главная</RouterLink>
       <RouterLink v-if="isAuthenticated()" to="/profile" class="nav-item">Профиль</RouterLink>
+      <RouterLink v-if="canModerate" to="/moderation" class="nav-item">Модерация</RouterLink>
     </nav>
 
     <div class="auth-container">
@@ -61,13 +63,19 @@ function togglePlayState() {
   </main>
 
 
-  <footer v-if="duration" class="footer-player">
-    <button class="play-pause-button" @click="togglePlayState"> {{isPlaying ? '⏸' : '▶'}}</button>
+  <footer v-if="currentMaterialId !== null" class="footer-player" aria-label="Аудиоплеер">
+    <div class="player-heading">
+      <span class="player-title">{{ currentTitle }}</span>
+      <p v-if="errorMessage" class="player-error" role="alert">{{ errorMessage }}</p>
+      <p v-else-if="loading" role="status">Загружаем аудио…</p>
+    </div>
+    <button class="play-pause-button" :disabled="loading" :aria-label="isPlaying ? 'Пауза' : 'Продолжить воспроизведение'" @click="togglePlayState">{{ errorMessage ? 'Повторить' : isPlaying ? '⏸' : '▶' }}</button>
     <span class="audio-duration"> {{ formatTime(currentTime) + "/" + formatTime(duration)  }} </span>
 
     <SliderRoot
       v-model="progressValue"
-      :max="duration"
+      :max="duration || 1"
+      :disabled="!duration || loading"
       :step="1"
       class="slider-root"
     >
@@ -89,6 +97,8 @@ header {
   align-items: center; /* выравнивание по вертикали по центру */
   padding: 16px 32px; /* внутренние отступы */
   border-bottom: 1px solid #2E303AFF;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
 .search-container input {
@@ -131,17 +141,27 @@ header {
 /* плеер */
 .footer-player {
   position: fixed;
-  bottom: 5%;
-  left: 24%;
-  width: 50%;
-  height: 60px;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(1000px, calc(100% - 32px));
+  box-sizing: border-box;
   border-radius: 20px;
   background-color: gray;
   display: flex;
   padding: 16px 32px;
   align-items: center; /* выравнивание по вертикали по центру */
   gap: 24px;
+  flex-wrap: wrap;
+  z-index: 10;
 }
+
+.main-content {padding-bottom: 180px;}
+.player-heading {width: 100%; text-align: left; overflow-wrap: anywhere; color: white;}
+.player-title {font-weight: 600;}
+.player-error {color: #ffe0dc;}
+.footer-player .slider-root {flex: 1; min-width: 100px;}
+.play-pause-button:disabled {opacity: .6;}
 
 .play-pause-button {
   cursor: pointer;

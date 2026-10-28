@@ -33,6 +33,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /** Explicit opt-in: verifies real PostgreSQL and S3 without touching development data. */
@@ -140,6 +141,17 @@ class MediaUploadIntegrationTest {
 
         mvc.perform(get("/rest-api/public/materials/" + id)).andExpect(status().isNotFound());
         mvc.perform(get("/rest-api/public/stream/" + id)).andExpect(status().isNotFound());
+        mvc.perform(get("/rest-api/public/materials"))
+                .andExpect(status().isOk()).andExpect(content().json("[]"));
+        mvc.perform(get("/rest-api/moderator/materials")
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_MODERATOR"))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].id").value(id.intValue()));
+        mvc.perform(get("/rest-api/moderator/materials/" + id)
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_MODERATOR"))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.audioUrl").isNotEmpty());
+        mvc.perform(post("/rest-api/moderator/approve/" + id)
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_AUTHOR"))))
+                .andExpect(status().isForbidden());
         mvc.perform(get("/rest-api/author/materials/" + id)
                         .with(jwt().jwt(token -> token.subject("other-author"))
                                 .authorities(new SimpleGrantedAuthority("ROLE_AUTHOR"))))
@@ -149,8 +161,58 @@ class MediaUploadIntegrationTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("PUBLISHED"));
         mvc.perform(get("/rest-api/public/materials/" + id))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.audioUrl").isNotEmpty());
+        mvc.perform(get("/rest-api/public/materials"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].id").value(id.intValue()));
+        mvc.perform(get("/rest-api/moderator/materials")
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_MODERATOR"))))
+                .andExpect(status().isOk()).andExpect(content().json("[]"));
+        mvc.perform(post("/rest-api/moderator/disapprove/" + id)
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_MODERATOR"))))
+                .andExpect(status().isConflict());
         mvc.perform(get("/rest-api/public/stream/" + id))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.url").isNotEmpty());
+
+        mvc.perform(get("/rest-api/moderator/materials").param("status", "PUBLISHED")
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_MODERATOR"))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].id").value(id.intValue()));
+        mvc.perform(get("/rest-api/moderator/materials/" + id)
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_MODERATOR"))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("PUBLISHED"));
+        mvc.perform(get("/rest-api/moderator/materials").param("status", "REJECTED")
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_MODERATOR"))))
+                .andExpect(status().isBadRequest());
+        mvc.perform(post("/rest-api/moderator/unpublish/" + id)
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_AUTHOR"))))
+                .andExpect(status().isForbidden());
+        mvc.perform(post("/rest-api/moderator/unpublish/" + id)
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_MODERATOR"))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("PENDING_MODERATION"));
+
+        mvc.perform(get("/rest-api/public/materials/" + id)).andExpect(status().isNotFound());
+        mvc.perform(get("/rest-api/public/stream/" + id)).andExpect(status().isNotFound());
+        mvc.perform(get("/rest-api/public/materials"))
+                .andExpect(status().isOk()).andExpect(content().json("[]"));
+        mvc.perform(get("/rest-api/moderator/materials").param("status", "PUBLISHED")
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_MODERATOR"))))
+                .andExpect(status().isOk()).andExpect(content().json("[]"));
+        mvc.perform(get("/rest-api/moderator/materials")
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_MODERATOR"))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].id").value(id.intValue()));
+        mvc.perform(post("/rest-api/moderator/unpublish/" + id)
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_MODERATOR"))))
+                .andExpect(status().isConflict());
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM media_asset", Integer.class)).isEqualTo(2);
+
+        mvc.perform(post("/rest-api/moderator/approve/" + id)
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_MODERATOR"))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("PUBLISHED"));
+        String republished = mvc.perform(get("/rest-api/public/materials/" + id))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        String republishedAudioUrl = JsonPath.read(republished, "$.audioUrl");
+        HttpResponse<byte[]> republishedAudio = client.send(HttpRequest.newBuilder(URI.create(republishedAudioUrl))
+                        .GET().build(), HttpResponse.BodyHandlers.ofByteArray());
+        assertThat(republishedAudio.statusCode()).isEqualTo(200);
+        assertThat(republishedAudio.body()).isEqualTo(audio);
     }
 
     private static byte[] wave() {

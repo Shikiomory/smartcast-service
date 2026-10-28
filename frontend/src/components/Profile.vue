@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {computed, ref, watch} from 'vue'
 import { authService } from '../composables/authService'
+import {audioService} from '../composables/audioService'
 
 import {
   AvatarRoot,
@@ -13,6 +14,7 @@ import {
 } from 'reka-ui'
 
 const { user } = authService()
+const {playPreview} = audioService()
 const backendUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(/\/$/, '')
 
 interface Category {
@@ -46,7 +48,6 @@ const contentType = ref('PODCAST')
 const categoryId = ref('')
 const loading = ref(false)
 const uploading = ref(false)
-const refreshingId = ref<number | null>(null)
 const errorMessage = ref('')
 const successMessage = ref('')
 
@@ -143,22 +144,6 @@ async function uploadAudio() {
     showError(error)
   } finally {
     uploading.value = false
-  }
-}
-
-async function refreshLinks(id: number) {
-  refreshingId.value = id
-  errorMessage.value = ''
-  try {
-    const material = await request<Material>(`/rest-api/author/materials/${id}`)
-    const index = materials.value.findIndex(item => item.id === id)
-    if (index !== -1) {
-      materials.value[index] = material
-    }
-  } catch (error) {
-    showError(error)
-  } finally {
-    refreshingId.value = null
   }
 }
 
@@ -307,12 +292,9 @@ function expiresAt(value: string) {
               <p>{{ material.authorName }} · {{ material.categoryName }}</p>
               <p>{{ material.type === 'AUDIOBOOK' ? 'Аудиокнига' : 'Подкаст' }} · {{ statusLabel(material.status) }}</p>
               <p v-if="material.description">{{ material.description }}</p>
-              <audio v-if="material.audioUrl" :key="material.audioUrl" :src="material.audioUrl" controls preload="metadata"></audio>
+              <audio v-if="material.audioUrl" :key="material.audioUrl" :src="material.audioUrl" controls preload="metadata" @play="playPreview"></audio>
               <p v-else>Аудио пока недоступно.</p>
               <p v-if="material.linksExpireAt" class="link-expiration">Ссылки действуют до {{ expiresAt(material.linksExpireAt) }}</p>
-              <button class="upload-button" type="button" :disabled="refreshingId !== null" @click="refreshLinks(material.id)">
-                {{ refreshingId === material.id ? 'Обновляем…' : 'Обновить ссылки на файлы' }}
-              </button>
             </div>
           </article>
         </template>

@@ -1,12 +1,18 @@
 package com.sbertech.app.controller;
 
 import com.sbertech.app.entity.ContentType;
+import com.sbertech.app.entity.ContentStatus;
 import com.sbertech.app.service.CatalogService;
 import com.sbertech.app.service.MaterialService;
+import com.sbertech.app.service.ModerationService;
+import com.sbertech.app.service.ComplainService;
 import com.sbertech.core.dto.MaterialDetailsDto;
+import com.sbertech.core.dto.MaterialDto;
 import com.sbertech.security.config.SecurityConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -48,11 +54,12 @@ class MediaApiSecurityTest {
     @Autowired WebApplicationContext context;
     @Autowired MaterialService materials;
     @Autowired CatalogService catalog;
+    @Autowired ModerationService moderation;
     private MockMvc mvc;
 
     @BeforeEach
     void setUp() {
-        reset(materials, catalog);
+        reset(materials, catalog, moderation);
         mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
     }
 
@@ -128,6 +135,106 @@ class MediaApiSecurityTest {
         mvc.perform(get("/rest-api/moderator/materials")
                         .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_LISTENER"))))
                 .andExpect(status().isForbidden());
+        verifyNoInteractions(moderation);
+    }
+
+    @Test
+    void authorCannotReviewPublishOrUnpublishTheirOwnMaterial() throws Exception {
+        var author = jwt().authorities(new SimpleGrantedAuthority("ROLE_AUTHOR"));
+        mvc.perform(get("/rest-api/moderator/materials").with(author))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/rest-api/moderator/materials/42").with(author))
+                .andExpect(status().isForbidden());
+        mvc.perform(post("/rest-api/moderator/approve/42").with(author))
+                .andExpect(status().isForbidden());
+        mvc.perform(post("/rest-api/moderator/disapprove/42").with(author))
+                .andExpect(status().isForbidden());
+        mvc.perform(post("/rest-api/moderator/unpublish/42").with(author))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/rest-api/moderator/materials").param("status", "PUBLISHED").with(author))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(moderation);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"MODERATOR", "ADMIN"})
+    void moderatorAndAdminCanPreviewAndDecide(String role) throws Exception {
+        var reviewer = jwt().authorities(new SimpleGrantedAuthority("ROLE_" + role));
+        MaterialDto pending = new MaterialDto();
+        pending.setId(42L);
+        pending.setStatus("PENDING_MODERATION");
+        MaterialDto published = new MaterialDto();
+        published.setId(42L);
+        published.setStatus("PUBLISHED");
+        MaterialDto rejected = new MaterialDto();
+        rejected.setId(43L);
+        rejected.setStatus("REJECTED");
+        MaterialDto unpublished = new MaterialDto();
+        unpublished.setId(42L);
+        unpublished.setStatus("PENDING_MODERATION");
+        MaterialDetailsDto details = new MaterialDetailsDto();
+        details.setAudioUrl("https://storage.example/pending.wav");
+        when(moderation.getMaterials(ContentStatus.PENDING_MODERATION)).thenReturn(List.of(pending));
+        when(moderation.getMaterials(ContentStatus.PUBLISHED)).thenReturn(List.of(published));
+        when(moderation.getMaterialDetails(42L)).thenReturn(details);
+        when(moderation.approveMaterial(42L)).thenReturn(published);
+        when(moderation.disapproveMaterial(43L)).thenReturn(rejected);
+        when(moderation.unpublishMaterial(42L)).thenReturn(unpublished);
+
+        mvc.perform(get("/rest-api/moderator/materials").with(reviewer))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].id").value(42));
+        mvc.perform(get("/rest-api/moderator/materials").param("status", "PUBLISHED").with(reviewer))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].status").value("PUBLISHED"));
+        mvc.perform(get("/rest-api/moderator/materials/42").with(reviewer))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.audioUrl").isNotEmpty());
+        mvc.perform(post("/rest-api/moderator/approve/42").with(reviewer))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("PUBLISHED"));
+        mvc.perform(post("/rest-api/moderator/disapprove/43").with(reviewer))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("REJECTED"));
+        mvc.perform(post("/rest-api/moderator/unpublish/42").with(reviewer))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("PENDING_MODERATION"));
+        verify(moderation).getMaterials(ContentStatus.PENDING_MODERATION);
+        verify(moderation).getMaterials(ContentStatus.PUBLISHED);
+        verify(moderation).approveMaterial(42L);
+        verify(moderation).disapproveMaterial(43L);
+        verify(moderation).unpublishMaterial(42L);
+    }
+
+    @Test
+    void signedInModeratorSessionCanPublishAndUnpublish() throws Exception {
+        mvc.perform(post("/rest-api/moderator/approve/42")
+                        .with(oidcLogin().authorities(new SimpleGrantedAuthority("ROLE_MODERATOR"))))
+                .andExpect(status().isOk());
+        verify(moderation).approveMaterial(42L);
+        mvc.perform(post("/rest-api/moderator/unpublish/42")
+                        .with(oidcLogin().authorities(new SimpleGrantedAuthority("ROLE_MODERATOR"))))
+                .andExpect(status().isOk());
+        verify(moderation).unpublishMaterial(42L);
+    }
+
+    @Test
+    void explicitPendingFilterReachesTheModerationQueue() throws Exception {
+        when(moderation.getMaterials(ContentStatus.PENDING_MODERATION)).thenReturn(List.of());
+        mvc.perform(get("/rest-api/moderator/materials").param("status", "PENDING_MODERATION")
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_MODERATOR"))))
+                .andExpect(status().isOk()).andExpect(content().json("[]"));
+        verify(moderation).getMaterials(ContentStatus.PENDING_MODERATION);
+    }
+
+    @Test
+    void malformedStatusFilterReturns400BeforeCallingTheService() throws Exception {
+        mvc.perform(get("/rest-api/moderator/materials").param("status", "not-a-status")
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_MODERATOR"))))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(moderation);
+    }
+
+    @Test
+    void guestCannotUnpublishMaterial() throws Exception {
+        int status = mvc.perform(post("/rest-api/moderator/unpublish/42"))
+                .andReturn().getResponse().getStatus();
+        assertTrue(status == 401 || status / 100 == 3, "Guest must authenticate before unpublishing");
+        verifyNoInteractions(moderation);
     }
 
     private MockMultipartFile audio() {
@@ -136,10 +243,12 @@ class MediaApiSecurityTest {
 
     @Configuration
     @EnableWebMvc
-    @Import({SecurityConfig.class, AuthorController.class, PublicController.class})
+    @Import({SecurityConfig.class, AuthorController.class, PublicController.class, ModController.class})
     static class TestConfig {
         @Bean MaterialService materialService() { return mock(MaterialService.class); }
         @Bean CatalogService catalogService() { return mock(CatalogService.class); }
+        @Bean ModerationService moderationService() { return mock(ModerationService.class); }
+        @Bean ComplainService complainService() { return mock(ComplainService.class); }
         @Bean JwtDecoder jwtDecoder() { return mock(JwtDecoder.class); }
 
         @Bean

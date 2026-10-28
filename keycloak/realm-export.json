@@ -89,6 +89,22 @@
         }
       ],
       "realmRoles": ["USER", "AUTHOR"]
+    },
+    {
+      "username": "testmoderator",
+      "enabled": true,
+      "email": "testmoderator@example.com",
+      "firstName": "Test",
+      "lastName": "Moderator",
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "moderatorpass",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["USER", "MODERATOR"]
     }
   ]
 }

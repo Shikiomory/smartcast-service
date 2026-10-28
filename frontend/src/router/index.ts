@@ -4,6 +4,7 @@ const {authStatus, user} = authService()
 
 import HomeView from "../components/HomeView.vue";
 import Profile from "../components/Profile.vue";
+import ModeratorView from "../components/ModeratorView.vue";
 
 
 const routes: RouteRecordRaw[] = [
@@ -19,6 +20,12 @@ const routes: RouteRecordRaw[] = [
         meta: {
             requiresAuth: true,
         }
+    },
+    {
+        path: '/moderation',
+        name: 'moderation',
+        component: ModeratorView,
+        meta: {requiresAuth: true, requiresModeration: true},
     }
 ]
 
@@ -29,11 +36,14 @@ const router = createRouter({
 
 router.beforeEach(async (to) => {
     const requiresAuth = to.meta.requiresAuth;
-    if (requiresAuth && !user.value.isAuthenticated) {
+    if (requiresAuth) {
         await authStatus();
         if (!user.value.isAuthenticated) {
             return {name: 'home'}
         }
+    }
+    if (to.meta.requiresModeration && !user.value.roles.some(role => role === 'MODERATOR' || role === 'ADMIN')) {
+        return {name: 'home'}
     }
 
 })

@@ -21,38 +21,47 @@ public class ModerationService {
 
     @Transactional
     public MaterialDto approveMaterial(Long id){
-        return changeStatus(id, ContentStatus.PUBLISHED);
+        return changeStatus(id, ContentStatus.PENDING_MODERATION, ContentStatus.PUBLISHED);
     }
 
     @Transactional
     public MaterialDto disapproveMaterial(Long id){
-        return changeStatus(id, ContentStatus.REJECTED);
+        return changeStatus(id, ContentStatus.PENDING_MODERATION, ContentStatus.REJECTED);
+    }
+
+    @Transactional
+    public MaterialDto unpublishMaterial(Long id) {
+        return changeStatus(id, ContentStatus.PUBLISHED, ContentStatus.PENDING_MODERATION);
     }
 
     @Transactional(readOnly = true)
-    public List<MaterialDto> getPendingMaterials() {
-        return contentRepository.findAllByStatus(ContentStatus.PENDING_MODERATION).stream()
+    public List<MaterialDto> getMaterials(ContentStatus status) {
+        if (status != ContentStatus.PENDING_MODERATION && status != ContentStatus.PUBLISHED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Доступны материалы на проверке и опубликованные материалы");
+        }
+        return contentRepository.findAllByStatus(status).stream()
                 .map(mapper::toDto).toList();
     }
 
     @Transactional(readOnly = true)
     public MaterialDetailsDto getMaterialDetails(Long id) {
-        return mapper.toDetails(requirePending(id));
-    }
-
-    private MaterialDto changeStatus(Long id, ContentStatus status) {
-        AudioContent content = requirePending(id);
-        content.setStatus(status);
-        return mapper.toDto(contentRepository.saveAndFlush(content));
-    }
-
-    private AudioContent requirePending(Long id) {
         AudioContent content = contentRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Материал не найден"));
-        if (content.getStatus() != ContentStatus.PENDING_MODERATION) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Материал не находится на модерации");
+        if (content.getStatus() != ContentStatus.PENDING_MODERATION && content.getStatus() != ContentStatus.PUBLISHED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Материал больше не доступен для проверки");
         }
-        return content;
+        return mapper.toDetails(content);
+    }
+
+    private MaterialDto changeStatus(Long id, ContentStatus expectedStatus, ContentStatus newStatus) {
+        // Статус проверяется под блокировкой, чтобы два модератора не перезаписали решение друг друга.
+        AudioContent content = contentRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Материал не найден"));
+        if (content.getStatus() != expectedStatus) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Статус материала изменился. Обновите список");
+        }
+        content.setStatus(newStatus);
+        return mapper.toDto(contentRepository.saveAndFlush(content));
     }
 
     public void deleteMaterial(Long id) {
