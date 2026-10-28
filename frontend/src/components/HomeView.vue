@@ -39,17 +39,6 @@ async function uploadAudio() {
   }
 }
 
-async function uploadAudio() {
-  try {
-    const response = await fetch("")
-    if (response.ok) {
-
-    }
-  } catch (error) {
-    console.log(error)
-  }
-}
-
 onMounted(() => {
   authStatus()
   uploadAudio()
