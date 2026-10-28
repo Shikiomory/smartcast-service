@@ -1,10 +1,16 @@
 <script setup lang="ts">
 // import HelloWorld from './components/HelloWorld.vue'
+import {Play, Pause, Search, LogOut} from "@lucide/vue"
 import { RouterView, RouterLink } from 'vue-router'
-import { SliderRoot, SliderTrack, SliderRange, SliderThumb } from "reka-ui";
+import { SliderRoot, SliderTrack, SliderRange, SliderThumb } from "reka-ui"
 import { authService } from "./composables/authService"
-import { audioService } from "./composables/audioService";
-import {computed} from "vue";
+import { audioService } from "./composables/audioService"
+import {computed} from "vue"
+
+import { Slider,} from "@/components/ui/slider"
+import {Input} from "@/components/ui/input";
+import {Button} from "@/components/ui/button";
+
 const { login, registration, logout, isAuthenticated } = authService()
 const { isPlaying, duration, currentTime, formatTime, playPauseAudio, seekAudio } = audioService();
 
@@ -20,172 +26,73 @@ const progressValue = computed({
   }
 })
 
-
-
-
 </script>
 
 <template>
-  <header>
-    <div class="logo-container">
-      <h1>SmartCast</h1>
-    </div>
 
-    <div class="search-container">
-      <input type="text" placeholder="Поиск..." />
-    </div>
+  <div class="min-h-screen flex flex-col bg-background text-foreground">
+    <header class="sticky top-0 z-40 w-full border-b bg-background">
+      <div class="container flex h-16 items-center justify-between gap-4 px-4 sm:px-8 mx-auto max-w-7xl">
+        <div>
+          <RouterLink to="/" class="flex items-center gap-2 font-bold text-2xl tracking-tight transition-opacity hover:opacity-90">
+            <span>Smartcast</span>
+          </RouterLink>
+        </div>
 
-    <nav class="navigation">
-      <RouterLink to="/" class="nav-item">Главная</RouterLink>
-      <RouterLink v-if="isAuthenticated()" to="/profile" class="nav-item">Профиль</RouterLink>
-    </nav>
+        <div class="relative w-full max-w-xs hidden:md:block">
+          <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <Input type="search" placeholder="Поиск..." class="pl-9 h-9 w-full bg-muted/40, rounded-full"/>
+        </div>
 
-    <div class="auth-container">
-      <button v-if="!isAuthenticated()" class="authorization-button" @click="login">Войти</button>
-      <button v-if="!isAuthenticated()" class="registration-button" @click="registration">Регистрация</button>
-      <button v-if="isAuthenticated()" class="logout-button" @click="logout">Выйти</button>
-    </div>
-  </header>
+        <nav class="flex items-center gap-6 text-sm font-medium">
+          <RouterLink to="/" class="text-muted-foreground transition-colors hover:text-foreground" active-class="!text-foreground font-semibold">Главная</RouterLink>
+          <RouterLink v-if="isAuthenticated()" to="/profile" class="text-muted-foreground transition-colors hover:text-foreground" active-class="!text-foreground font-semibold">Профиль</RouterLink>
+        </nav>
 
-  <main class="main-content">
-    <router-view/>
-  </main>
+        <div class="flex items-center gap-2">
+          <template v-if="!isAuthenticated()">
+            <Button variant="ghost" size="sm" @click="login">
+              Войти
+            </Button>
+            <Button size="sm" @click="registration">
+              Регистрация
+            </Button>
+          </template>
 
+          <Button v-else variant="outline" size="sm" class="gap-1.5" @click="logout">
+            <LogOut class="size-4" />
+            <span class="hidden sm:inline">Выйти</span>
+          </Button>
+        </div>
+      </div>
+    </header>
 
-  <footer v-if="duration" class="footer-player">
-    <button class="play-pause-button" @click="playPauseAudio()"> {{isPlaying ? '⏸' : '▶'}}</button>
-    <span class="audio-duration"> {{ formatTime(currentTime) + "/" + formatTime(duration)  }} </span>
+    <main class="flex-1" :class="{ 'pb-28': duration }">
+      <RouterView />
+    </main>
+    <aside v-if="duration"
+        class="fixed bottom-6 inset-x-4 mx-auto max-w-2xl z-50 flex items-center gap-4 px-6 py-2.5 rounded-full border bg-card/90 backdrop-blur shadow-lg">
+      <Button
+          size="icon"
+          class="size-10 rounded-full shrink-0 shadow-md"
+          @click="playPauseAudio()"
+      >
+        <Pause v-if="isPlaying" class="size-4 fill-current" />
+        <Play v-else class="size-4 fill-current ml-0.5" />
+      </Button>
+      <div class="flex items-center gap-1 text-xs font-mono text-muted-foreground shrink-0 select-none">
+        <span>{{ formatTime(currentTime) }}</span>
+        <span class="opacity-40">/</span>
+        <span>{{ formatTime(duration) }}</span>
+      </div>
 
-    <SliderRoot
-      v-model="progressValue"
-      :max="duration"
-      :step="1"
-      class="slider-root"
-    >
-      <SliderTrack class="slider-track">
-        <SliderRange class="slider-range"/>
-      </SliderTrack>
-      <SliderThumb class="slider-thumb"/>
-    </SliderRoot>
-  </footer>
+      <Slider
+          v-model="progressValue"
+          :max="duration"
+          :step="1"
+          class="flex-1 cursor-pointer"
+      />
+    </aside>
+
+  </div>
 </template>
-
-
-
-<style scoped>
-/* заголовок */
-header {
-  display: flex; /* построение в ряд */
-  justify-content: space-between; /* место между объектами */
-  align-items: center; /* выравнивание по вертикали по центру */
-  padding: 16px 32px; /* внутренние отступы */
-  border-bottom: 1px solid #2E303AFF;
-}
-
-.search-container input {
-  padding: 8px 16px; /* внутренние отступы */
-  width: 300px; /* ширина */
-  border-radius: 20px; /* округление */
-  border: 1px solid gray; /* обводка */
-
-}
-
-.auth-container button {
-  margin-left: 8px;
-  padding: 8px 16px; /* внутренние отступы */
-  cursor: pointer; /* смена курсора при наведении */
-  border-radius: 20px; /* округление */
-  border: 1px solid gray; /* обводка */
-  font-weight: bold; /* жирный шрифт */
-}
-
-.auth-container button:hover {
-  background-color: gray; /* затемнение при наведении */
-}
-
-.navigation {
-  display: flex;
-  gap: 16px; /* или margin-right: 16px у ссылок */
-}
-
-.navigation a {
-  color: #94a3b8;
-  text-decoration: none;
-}
-
-.navigation a:hover {
-  color: white;
-}
-
-
-
-/* плеер */
-.footer-player {
-  position: fixed;
-  bottom: 5%;
-  left: 24%;
-  width: 50%;
-  height: 60px;
-  border-radius: 20px;
-  background-color: gray;
-  display: flex;
-  padding: 16px 32px;
-  align-items: center; /* выравнивание по вертикали по центру */
-  gap: 24px;
-}
-
-.play-pause-button {
-  cursor: pointer;
-  font-weight: bold;
-  border-radius: 20px;
-  padding: 8px 16px;
-}
-
-.play-pause-button:hover {
-  background-color: gray; /* затемнение при наведении */
-}
-
-.audio-duration {
-  color: white;
-}
-
-.slider-root {
-  width: 100%;
-  height: 20px;
-  cursor: pointer;
-  user-select: none;
-  touch-action: none;
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.slider-track {
-  background-color: #424453;
-  height: 6px;
-  flex-grow: 1;
-  position: relative;
-  border-radius: 20px;
-}
-
-.slider-range {
-  position: absolute;
-  height: 100%;
-  background-color: white;
-  border-radius: 20px;
-}
-
-.slider-thumb {
-  display: block;
-  width: 14px;
-  height: 12px;
-  background-color: white;
-  border-radius: 35%;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-  transition: transform 0.1s ease;
-}
-
-.slider-thumb:hover {
-  transform: scale(1.2);
-}
-</style>

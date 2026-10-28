@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-import { FileAudio} from "@lucide/vue";
+import { FileAudio, Play, Pause} from "@lucide/vue";
 import {onMounted, ref} from "vue";
 import { audioService } from "../composables/audioService.ts";
 import { authService } from "../composables/authService.ts";
@@ -48,9 +48,13 @@ onMounted(() => {
 <template>
   <div class="w-full max-w-7xl mx-auto p-6 md:p-8">
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-      <Card v-for="card in cards" :key="card.id" class="cursor-pointer overflow-hidden rounded-lg group flex flex-col" @click="handleCardClick(card)">
-        <div class="relative aspect-square w-full bg-muted flex items-center justify-center overflow-hidden border-b">
+      <Card v-for="card in cards" :key="card.id" class="cursor-pointer overflow-hidden rounded-lg group flex flex-col transition-colors duration-200 border hover:border-primary hover:bg-accent/30" @click="handleCardClick(card)">
+        <div class="relative aspect-square w-full bg-muted flex items-center justify-center overflow-hidden border-b ">
           <FileAudio class="size-12 text-muted-foreground transition-transform duration-300 group-hover:scale-105" />
+
+          <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <Play class="size-8 text-white fill-white drop-shadow" />
+          </div>
         </div>
 
         <CardHeader class="p-4 pb-2 space-y-1 flex-1">
