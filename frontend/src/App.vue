@@ -51,15 +51,15 @@ const progressValue = computed({
 
         <div class="flex items-center gap-2">
           <template v-if="!isAuthenticated()">
-            <Button variant="ghost" size="sm" @click="login">
+            <Button variant="ghost" size="sm" @click="login" class="cursor-pointer">
               Войти
             </Button>
-            <Button size="sm" @click="registration">
+            <Button size="sm" @click="registration" class="cursor-pointer">
               Регистрация
             </Button>
           </template>
 
-          <Button v-else variant="outline" size="sm" class="gap-1.5" @click="logout">
+          <Button v-else variant="outline" size="sm" class="gap-1.5 cursor-pointer" @click="logout">
             <LogOut class="size-4" />
             <span class="hidden sm:inline">Выйти</span>
           </Button>
