@@ -61,7 +61,7 @@ function isAuthenticated() {
 }
 
 async function registration() {
-    window.location.href = backendUrl + "/rest-api/auth/login";
+    window.location.href = backendUrl + "/rest-api/auth/register";
 }
 
 async function login() {
