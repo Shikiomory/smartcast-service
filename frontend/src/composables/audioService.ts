@@ -26,39 +26,43 @@ function getCurrentTime() {
     currentTime.value = sound?.seek() ?? null;
 }
 
-
-function playAudio(url: string) {
-    if (currentUrl.value !== url) {
-        if (sound) {
-            sound.stop()
-            sound.unload()
-            sound = null
-        }
-
-        currentUrl.value = url;
-        sound = new Howl({
-            src: [url],
-            volume: volume.value,
-            html5: true,
-            onload: () => {duration.value = sound?.duration() ?? null},
-            onplay: () => {startTimer(), isPlaying.value = true},
-            onpause: () => {stopTimer(), isPlaying.value = false },
-            onend: () => { isPlaying.value = false, isPlaying.value = false },
-        });
-
-        sound.play();
-        return;
+function initAudio(url: string ) {
+    if (sound) {
+        sound.stop()
+        sound.unload()
+        sound = null
     }
+    currentUrl.value = url;
+    sound = new Howl({
+        src: [url],
+        volume: volume.value,
+        html5: true,
+        onload: () => {duration.value = sound?.duration() ?? null},
+        onplay: () => {startTimer(), isPlaying.value = true},
+        onpause: () => {stopTimer(), isPlaying.value = false },
+        onend: () => { stopTimer(), isPlaying.value = false, isPlaying.value = false },
+    });
 
-    if (sound && !isPlaying.value) {
-        sound.play();
+}
+function playAudio(url?: string) {
+    if (url && currentUrl.value !== url) {
+        initAudio(url);
     }
+    sound?.play();
 }
 
 function pauseAudio() {
-    if (isPlaying.value) {
-        sound?.pause();
-        isPlaying.value = false;
+    sound?.pause();
+}
+
+function playPauseAudio(url?: string) {
+    const targetUrl = url || currentUrl.value
+    if (!targetUrl) return
+
+    if (isPlaying.value && currentUrl.value === targetUrl) {
+        pauseAudio();
+    } else {
+        playAudio(targetUrl)
     }
 }
 
@@ -87,6 +91,7 @@ export function audioService() {
         formatTime,
         playAudio,
         pauseAudio,
+        playPauseAudio,
         seekAudio,
     }
 }

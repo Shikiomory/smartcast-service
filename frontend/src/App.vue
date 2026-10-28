@@ -6,7 +6,7 @@ import { authService } from "./composables/authService"
 import { audioService } from "./composables/audioService";
 import {computed} from "vue";
 const { login, registration, logout, isAuthenticated } = authService()
-const { isPlaying, duration, currentTime, currentUrl, formatTime, playAudio, pauseAudio, seekAudio } = audioService();
+const { isPlaying, duration, currentTime, formatTime, playPauseAudio, seekAudio } = audioService();
 
 const progressValue = computed({
   get() {
@@ -20,23 +20,12 @@ const progressValue = computed({
   }
 })
 
-function togglePlayState() {
-  if (isPlaying.value) {
-    pauseAudio();
-  }
-  else {
-    // playAudio("https://apostol-space.tech/uploads/404a8e76b218762e9efe38108f16e080_e2a7d1be93b1ad3a6c036e7f6597d6c6.mp3");
-    if (currentUrl.value) {
-      playAudio(currentUrl.value)
-    }
-  }
-}
+
 
 
 </script>
 
 <template>
-<!--  <HelloWorld />-->
   <header>
     <div class="logo-container">
       <h1>SmartCast</h1>
@@ -64,7 +53,7 @@ function togglePlayState() {
 
 
   <footer v-if="duration" class="footer-player">
-    <button class="play-pause-button" @click="togglePlayState"> {{isPlaying ? '⏸' : '▶'}}</button>
+    <button class="play-pause-button" @click="playPauseAudio()"> {{isPlaying ? '⏸' : '▶'}}</button>
     <span class="audio-duration"> {{ formatTime(currentTime) + "/" + formatTime(duration)  }} </span>
 
     <SliderRoot
