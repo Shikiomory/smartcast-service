@@ -15,7 +15,7 @@ import axios from "axios";
 import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
 
 const backendUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8080')
-const {playAudio} = audioService();
+const {playPauseAudio} = audioService();
 //.
 interface Material {
   id: number
@@ -129,7 +129,7 @@ function handleCardClick(item: Material) {
     console.warn('Аудиофайл еще не готов или ссылка отсутствует:', item.title)
     return
   }
-  playAudio(item.audioUrl)
+  playPauseAudio(item.audioUrl)
 }
 
 //.
@@ -162,13 +162,13 @@ onMounted(() =>{
 
     <Tabs v-model="activeTab" class="w-full">
       <TabsList class="grid w-full grid-cols-3">
-        <TabsTrigger value="general">
+        <TabsTrigger value="general" class="cursor-pointer">
           Общие данные
         </TabsTrigger>
-        <TabsTrigger value="podcasts">
+        <TabsTrigger value="podcasts" class="cursor-pointer">
           Мои подкасты
         </TabsTrigger>
-        <TabsTrigger value="history">
+        <TabsTrigger value="history" class="cursor-pointer">
           История
         </TabsTrigger>
       </TabsList>
@@ -222,6 +222,7 @@ onMounted(() =>{
                 size="sm"
                 :disabled="isLoading"
                 @click="loadMaterials"
+                class="cursor-pointer"
             >
               <RotateCw class="size-3.5 mr-1.5" :class="{ 'animate-spin': isLoading }" />
               Обновить

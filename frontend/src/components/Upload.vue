@@ -266,7 +266,8 @@ onUnmounted(() => {
 <template>
     <Card class="w-full max-w-3xl mx-auto my-10">
       <CardHeader>
-        <Button variant="ghost" class="w-fit" size="sm" aria-label="назад" @click="router.push({ path: '/profile', query: { tab: 'podcasts' } })">
+        <Button variant="ghost" class="w-fit cursor-pointer" size="sm" aria-label="назад"
+                @click="router.push({ path: '/profile', query: { tab: 'podcasts' } })">
           <ArrowLeftIcon class="size-4"></ArrowLeftIcon>
           назад
         </Button>

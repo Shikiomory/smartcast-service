@@ -1,9 +1,11 @@
 <script setup lang="ts">
 
+import { FileAudio, Play, Pause} from "@lucide/vue";
 import {onMounted, ref} from "vue";
 import { audioService } from "../composables/audioService.ts";
 import { authService } from "../composables/authService.ts";
-const {playAudio} = audioService();
+import {CardDescription, CardFooter, CardHeader, CardTitle} from "@/components/ui/card";
+const {playPauseAudio} = audioService();
 const { authStatus } = authService()
 
 interface Card {
@@ -23,8 +25,7 @@ const cards = ref<Card[]>([
 
 function handleCardClick(card: Card) {
   console.log(card);
-  // playAudio("https://apostol-space.tech/uploads/404a8e76b218762e9efe38108f16e080_e2a7d1be93b1ad3a6c036e7f6597d6c6.mp3")
-  playAudio("/ost.mp3")
+  playPauseAudio("/ost.mp3")
 }
 
 async function uploadAudio() {
@@ -45,72 +46,25 @@ onMounted(() => {
 </script>
 
 <template>
-  <main>
-    <div class="content">
-      <div v-for="card in cards" :key="card.id" class="card" @click="handleCardClick(card)">
-        <div class="card-cover">
-<!--          <img class="card-img" :src="card.image" />-->
-          <h2>Обложка</h2>
+  <div class="w-full max-w-7xl mx-auto p-6 md:p-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <Card v-for="card in cards" :key="card.id" class="cursor-pointer overflow-hidden rounded-lg group flex flex-col transition-colors duration-200 border hover:border-primary hover:bg-accent/30" @click="handleCardClick(card)">
+        <div class="relative aspect-square w-full bg-muted flex items-center justify-center overflow-hidden border-b ">
+          <FileAudio class="size-12 text-muted-foreground transition-transform duration-300 group-hover:scale-105" />
+
+          <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <Play class="size-8 text-white fill-white drop-shadow" />
+          </div>
         </div>
-        <div class="card-content">
-          <h3 class="card-title">{{ card.title }}</h3>
-          <p class="card-author">{{ card.author }}</p>
-          <span class="card-duration">{{ card.duration }}</span>
-        </div>
-      </div>
+
+        <CardHeader class="p-4 pb-2 space-y-1 flex-1">
+          <CardTitle class="text-base leading-snug line-clamp-2 group-hover:text-primary transition-colors"> {{ card.title }}</CardTitle>
+          <CardDescription> {{ card.author }}</CardDescription>
+        </CardHeader>
+        <CardFooter class="p-4 pt-0 text-xs text-muted-foreground flex items-center gap-1.5">
+          <time class="font-mono"> {{ card.duration }}</time>
+        </CardFooter>
+      </Card>
     </div>
-  </main>
-
+  </div>
 </template>
-
-<style scoped>
-/* главный блок */
-main {
-  padding: 32px 32px; /* внутренние отступы */
-}
-
-.content {
-  display: grid; /* сетка */
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* автоматическое построение колонок по размеру */
-  gap: 24px; /* отступы между карточками */
-}
-
-
-
-/* карточки */
-.card {
-  background-color: #2E303A; /* цвет фона */
-  border-radius: 12px; /* округление */
-  padding: 16px; /* внутренние отступы */
-  cursor: pointer; /* смена курсора при наведении */
-  transition: background-color 0.3s ease; /* затемнение при наведении */
-}
-
-.card:hover {
-  background-color: #424453; /* затемнение при наведении */
-}
-
-.card-cover {
-
-}
-
-.card-title {
-  font-size: 18px;
-  font-weight: bold;
-  margin-bottom: 8px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.card-author {
-  font-size: 16px;
-  margin-bottom: 4px;
-}
-
-.card-duration {
-  font-size: 14px;
-  color: gray;
-}
-</style>
