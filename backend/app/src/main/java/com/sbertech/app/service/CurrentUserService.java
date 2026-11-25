@@ -8,6 +8,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
@@ -28,7 +29,7 @@ public class CurrentUserService {
         throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Ожидается авторизация через Keycloak");
     }
 
-    // Пароль и роли остаются в Keycloak. В нашей БД нужен только профиль автора.
+    @Transactional
     public AppUser getOrCreate(Authentication authentication) {
         String subject = getSubject(authentication);
         return userRepository.findByKeycloakId(subject).orElseGet(() -> {
@@ -41,10 +42,10 @@ public class CurrentUserService {
             if (name == null || name.isBlank()) {
                 name = subject;
             }
-            AppUser user = new AppUser();
-            user.setKeycloakId(subject);
-            user.setDisplayName(name.substring(0, Math.min(name.length(), 100)));
-            return userRepository.saveAndFlush(user);
+            String displayName = name.substring(0, Math.min(name.length(), 100));
+            userRepository.insertIfAbsent(subject, displayName);
+            return userRepository.findByKeycloakId(subject)
+                    .orElseThrow(() -> new IllegalStateException("Не удалось получить профиль пользователя"));
         });
     }
 

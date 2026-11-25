@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class CurrentUserServiceTest {
@@ -26,12 +25,14 @@ class CurrentUserServiceTest {
     void createsProfileUsingVerifiedJwtSubjectAndUsername() {
         Jwt token = Jwt.withTokenValue("test").header("alg", "none").subject("keycloak-author")
                 .claim("preferred_username", "alice").build();
-        when(users.findByKeycloakId("keycloak-author")).thenReturn(Optional.empty());
-        when(users.saveAndFlush(any())).thenAnswer(call -> call.getArgument(0));
-        AppUser user = service.getOrCreate(new JwtAuthenticationToken(token, List.of()));
-        assertEquals("keycloak-author", user.getKeycloakId());
-        assertEquals("alice", user.getDisplayName());
-        verify(users).saveAndFlush(user);
+        AppUser persisted = new AppUser();
+        persisted.setKeycloakId("keycloak-author");
+        persisted.setDisplayName("alice");
+        when(users.findByKeycloakId("keycloak-author")).thenReturn(Optional.empty())
+                .thenReturn(Optional.of(persisted));
+
+        assertSame(persisted, service.getOrCreate(new JwtAuthenticationToken(token, List.of())));
+        verify(users).insertIfAbsent("keycloak-author", "alice");
     }
 
     @Test
@@ -41,13 +42,16 @@ class CurrentUserServiceTest {
         when(principal.getPreferredUsername()).thenReturn("a".repeat(130));
         var authentication = UsernamePasswordAuthenticationToken.authenticated(principal, "unused",
                 List.of(new SimpleGrantedAuthority("ROLE_AUTHOR")));
-        when(users.findByKeycloakId("oidc-author")).thenReturn(Optional.empty());
-        when(users.saveAndFlush(any())).thenAnswer(call -> call.getArgument(0));
-        AppUser profile = service.getOrCreate(authentication);
-        assertEquals(100, profile.getDisplayName().length());
-        when(users.findByKeycloakId("oidc-author")).thenReturn(Optional.of(profile));
-        assertSame(profile, service.getOrCreate(authentication));
-        verify(users, times(1)).saveAndFlush(any());
+        AppUser persisted = new AppUser();
+        persisted.setKeycloakId("oidc-author");
+        persisted.setDisplayName("Сохранённое имя");
+        when(users.findByKeycloakId("oidc-author")).thenReturn(Optional.empty())
+                .thenReturn(Optional.of(persisted));
+
+        assertSame(persisted, service.getOrCreate(authentication));
+        assertSame(persisted, service.getOrCreate(authentication));
+        assertEquals("Сохранённое имя", persisted.getDisplayName());
+        verify(users).insertIfAbsent("oidc-author", "a".repeat(100));
     }
 
     @Test

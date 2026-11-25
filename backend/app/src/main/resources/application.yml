@@ -49,3 +49,7 @@ spring:
     hibernate:
       ddl-auto: validate
     open-in-view: false
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/changelog/changes/002-create-playlists.sql
